@@ -34,9 +34,10 @@ export interface NewsItem {
 
 export interface Meme {
   id: string;
+  /** Path under the frontend's own origin, e.g. /memes/meme-001.svg */
+  imageUrl: string;
   caption: string;
   subcaption: string;
-  accent: string;
   altText: string;
 }
 

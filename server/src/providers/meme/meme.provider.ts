@@ -20,7 +20,7 @@ export class StaticMemeProvider implements MemeProvider {
     if (!meme) {
       return Promise.resolve({
         status: 'error',
-        data: { id: 'none', caption: '', subcaption: '', accent: '#64748b', altText: '' },
+        data: { id: 'none', imageUrl: '', caption: '', subcaption: '', altText: '' },
         source: 'curated',
         fetchedAt: new Date().toISOString(),
         notice: 'No meme is available right now.',

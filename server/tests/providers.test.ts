@@ -306,7 +306,7 @@ describe('StaticMemeProvider', () => {
 
   it('still returns something when only one meme exists', async () => {
     const only = [
-      { id: 'solo', caption: 'a', subcaption: 'b', accent: '#fff', altText: 'alt' },
+      { id: 'solo', imageUrl: '/memes/solo.svg', caption: 'a', subcaption: 'b', altText: 'alt' },
     ];
     const result = await new StaticMemeProvider(only).getMeme('solo');
 
@@ -352,5 +352,43 @@ describe('RSS asset detection', () => {
 
   it('does not tag ONE from the word "one"', async () => {
     expect(await assetsFor('Only one exchange reported an outage today')).not.toContain('ONE');
+  });
+});
+
+describe('meme manifest', () => {
+  it('loads every entry from the JSON manifest', async () => {
+    const { MEMES } = await import('../src/providers/meme/memes.js');
+
+    expect(MEMES.length).toBeGreaterThanOrEqual(10);
+    for (const meme of MEMES) {
+      expect(meme.imageUrl).toMatch(/^\/memes\/.+\.(svg|png|jpg|jpeg|gif|webp)$/i);
+      expect(meme.altText.length).toBeGreaterThan(10);
+      expect(meme.caption).toBeTruthy();
+    }
+  });
+
+  it('has unique ids and unique image paths', async () => {
+    const { MEMES } = await import('../src/providers/meme/memes.js');
+
+    expect(new Set(MEMES.map((m) => m.id)).size).toBe(MEMES.length);
+    expect(new Set(MEMES.map((m) => m.imageUrl)).size).toBe(MEMES.length);
+  });
+});
+
+describe('meme images on disk', () => {
+  // Guards the hand-edited workflow: adding a manifest row but forgetting the
+  // file, or mistyping the filename, would render a broken image in production.
+  it('has a real file in client/public for every manifest entry', async () => {
+    const { existsSync } = await import('node:fs');
+    const { fileURLToPath } = await import('node:url');
+    const { dirname, join } = await import('node:path');
+    const { MEMES } = await import('../src/providers/meme/memes.js');
+
+    const publicDir = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'client', 'public');
+    const missing = MEMES.filter((m) => !existsSync(join(publicDir, m.imageUrl))).map(
+      (m) => `${m.id} -> ${m.imageUrl}`,
+    );
+
+    expect(missing).toEqual([]);
   });
 });

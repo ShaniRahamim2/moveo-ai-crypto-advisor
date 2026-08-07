@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" width="600" height="400" role="img">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#151b28"/>
+      <stop offset="1" stop-color="#0d1119"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="400" rx="18" fill="url(#bg)"/>
+  <rect x="1" y="1" width="598" height="398" rx="17" fill="none" stroke="#26314a" stroke-width="2"/>
+  <g><line x1="179.0" y1="142" x2="179.0" y2="196" stroke="#22c55e" stroke-width="3"/><rect x="170" y="150" width="18" height="38" rx="3" fill="#22c55e"/><line x1="206.0" y1="162" x2="206.0" y2="212" stroke="#f05252" stroke-width="3"/><rect x="197" y="170" width="18" height="34" rx="3" fill="#f05252"/><line x1="233.0" y1="180" x2="233.0" y2="230" stroke="#f05252" stroke-width="3"/><rect x="224" y="188" width="18" height="34" rx="3" fill="#f05252"/><line x1="260.0" y1="198" x2="260.0" y2="246" stroke="#f05252" stroke-width="3"/><rect x="251" y="206" width="18" height="32" rx="3" fill="#f05252"/><line x1="287.0" y1="216" x2="287.0" y2="260" stroke="#f05252" stroke-width="3"/><rect x="278" y="224" width="18" height="28" rx="3" fill="#f05252"/><line x1="314.0" y1="234" x2="314.0" y2="270" stroke="#f05252" stroke-width="3"/><rect x="305" y="242" width="18" height="20" rx="3" fill="#f05252"/><path d="M179 150 L318 242 L392 258" stroke="#f05252" stroke-width="3" fill="none" stroke-dasharray="6 5"/><circle cx="430" cy="186" r="7.8" fill="#94a3b8"/><rect x="425.8" y="193.8" width="8.4" height="20.4" rx="7" fill="#94a3b8"/><line x1="426.4" y1="198.0" x2="414.4" y2="183.6" stroke="#94a3b8" stroke-width="4.2" stroke-linecap="round"/><line x1="433.6" y1="198.0" x2="445.6" y2="183.6" stroke="#94a3b8" stroke-width="4.2" stroke-linecap="round"/><line x1="427.6" y1="213.6" x2="422.8" y2="229.2" stroke="#94a3b8" stroke-width="4.2" stroke-linecap="round"/><line x1="432.4" y1="213.6" x2="437.2" y2="229.2" stroke="#94a3b8" stroke-width="4.2" stroke-linecap="round"/></g>
+  <text x="300.0" y="312" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="31" font-weight="700" fill="#f1f5f9">Bought the dip</text>
+  <text x="300.0" y="348" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="19" fill="#93a2b8">It kept dipping.</text>
+  <rect x="248" y="368" width="104" height="4" rx="2" fill="#f05252" opacity="0.85"/>
+</svg>

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" width="600" height="400" role="img">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#151b28"/>
+      <stop offset="1" stop-color="#0d1119"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="400" rx="18" fill="url(#bg)"/>
+  <rect x="1" y="1" width="598" height="398" rx="17" fill="none" stroke="#26314a" stroke-width="2"/>
+  <g><path d="M160 160 L214 200 L268 244 L322 200 L376 160 L440 128" stroke="#94a3b8" stroke-width="4" fill="none"/><circle cx="268" cy="244" r="11" fill="#f05252"/><text x="268" y="270" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="17" font-weight="700" fill="#f05252">sold</text><path d="M322 200 L376 160 L440 128" stroke="#22c55e" stroke-width="5" fill="none"/><path d="M440 128 l-16 2 6 12z" fill="#22c55e"/></g>
+  <text x="300.0" y="312" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="31" font-weight="700" fill="#f1f5f9">Sold at a loss</text>
+  <text x="300.0" y="348" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="19" fill="#93a2b8">It recovered ninety minutes later.</text>
+  <rect x="248" y="368" width="104" height="4" rx="2" fill="#f05252" opacity="0.85"/>
+</svg>

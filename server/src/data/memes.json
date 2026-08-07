@@ -1,0 +1,86 @@
+[
+  {
+    "id": "meme-001",
+    "imageUrl": "/memes/meme-001.svg",
+    "caption": "Bought the dip",
+    "subcaption": "It kept dipping.",
+    "altText": "A price chart falling steeply with a small figure clinging to the last candle."
+  },
+  {
+    "id": "meme-002",
+    "imageUrl": "/memes/meme-002.svg",
+    "caption": "To the moon",
+    "subcaption": "Current altitude: basement.",
+    "altText": "A rocket buried nose-first in the ground with a small crater and the moon far above."
+  },
+  {
+    "id": "meme-003",
+    "imageUrl": "/memes/meme-003.svg",
+    "caption": "Checked the charts at 3am",
+    "subcaption": "Nothing had changed. Checked again at 3:04.",
+    "altText": "A person sitting up in bed at night lit by a phone screen, with a crescent moon in the window."
+  },
+  {
+    "id": "meme-004",
+    "imageUrl": "/memes/meme-004.svg",
+    "caption": "HODL",
+    "subcaption": "Originally a typo. Now a personality.",
+    "altText": "Two hands holding a large diamond above a rising chart line."
+  },
+  {
+    "id": "meme-005",
+    "imageUrl": "/memes/meme-005.svg",
+    "caption": "Gas fees: $84",
+    "subcaption": "Transaction value: $12.",
+    "altText": "A fuel pump with a very large price display next to a tiny coin."
+  },
+  {
+    "id": "meme-006",
+    "imageUrl": "/memes/meme-006.svg",
+    "caption": "My portfolio is diversified",
+    "subcaption": "Down in seven different currencies.",
+    "altText": "Seven downward bars of different colours arranged like a portfolio breakdown."
+  },
+  {
+    "id": "meme-007",
+    "imageUrl": "/memes/meme-007.svg",
+    "caption": "Seed phrase stored safely",
+    "subcaption": "Location: also lost.",
+    "altText": "A sheet of paper with blurred words inside a maze, with a question mark above it."
+  },
+  {
+    "id": "meme-008",
+    "imageUrl": "/memes/meme-008.svg",
+    "caption": "One green candle later",
+    "subcaption": "Suddenly an expert in monetary policy.",
+    "altText": "A small figure in a graduation cap standing beside one tall green candle among red ones."
+  },
+  {
+    "id": "meme-009",
+    "imageUrl": "/memes/meme-009.svg",
+    "caption": "Analysts call it consolidation",
+    "subcaption": "I call it a three-week nap.",
+    "altText": "A cat asleep on a completely flat price line."
+  },
+  {
+    "id": "meme-010",
+    "imageUrl": "/memes/meme-010.svg",
+    "caption": "Sold at a loss",
+    "subcaption": "It recovered ninety minutes later.",
+    "altText": "A chart that drops, is marked with a sell point, then rises sharply afterwards."
+  },
+  {
+    "id": "meme-011",
+    "imageUrl": "/memes/meme-011.svg",
+    "caption": "This time it is different",
+    "subcaption": "It is never different.",
+    "altText": "Three identical repeating chart cycles side by side."
+  },
+  {
+    "id": "meme-012",
+    "imageUrl": "/memes/meme-012.svg",
+    "caption": "Set a price alert",
+    "subcaption": "Still checking manually every four minutes.",
+    "altText": "A notification bell beside a phone being refreshed repeatedly."
+  }
+]

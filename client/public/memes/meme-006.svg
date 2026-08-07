@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" width="600" height="400" role="img">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#151b28"/>
+      <stop offset="1" stop-color="#0d1119"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="400" rx="18" fill="url(#bg)"/>
+  <rect x="1" y="1" width="598" height="398" rx="17" fill="none" stroke="#26314a" stroke-width="2"/>
+  <g><rect x="160" y="150" width="24" height="34" rx="5" fill="#f05252" opacity="0.45"/><path d="M172 200 l-8 -10 h16z" fill="#f05252"/><rect x="200" y="150" width="24" height="51" rx="5" fill="#f05252" opacity="0.52"/><path d="M212 217 l-8 -10 h16z" fill="#f05252"/><rect x="240" y="150" width="24" height="68" rx="5" fill="#f05252" opacity="0.5900000000000001"/><path d="M252 234 l-8 -10 h16z" fill="#f05252"/><rect x="280" y="150" width="24" height="85" rx="5" fill="#f05252" opacity="0.66"/><path d="M292 251 l-8 -10 h16z" fill="#f05252"/><rect x="320" y="150" width="24" height="46" rx="5" fill="#f05252" opacity="0.73"/><path d="M332 212 l-8 -10 h16z" fill="#f05252"/><rect x="360" y="150" width="24" height="63" rx="5" fill="#f05252" opacity="0.8"/><path d="M372 229 l-8 -10 h16z" fill="#f05252"/><rect x="400" y="150" width="24" height="80" rx="5" fill="#f05252" opacity="0.8700000000000001"/><path d="M412 246 l-8 -10 h16z" fill="#f05252"/><line x1="150" y1="150" x2="450" y2="150" stroke="#3b4762" stroke-width="2" stroke-dasharray="5 5"/></g>
+  <text x="300.0" y="312" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="31" font-weight="700" fill="#f1f5f9">My portfolio is diversified</text>
+  <text x="300.0" y="348" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="19" fill="#93a2b8">Down in seven different currencies.</text>
+  <rect x="248" y="368" width="104" height="4" rx="2" fill="#f05252" opacity="0.85"/>
+</svg>

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" width="600" height="400" role="img">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#151b28"/>
+      <stop offset="1" stop-color="#0d1119"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="400" rx="18" fill="url(#bg)"/>
+  <rect x="1" y="1" width="598" height="398" rx="17" fill="none" stroke="#26314a" stroke-width="2"/>
+  <g><line x1="195.0" y1="201" x2="195.0" y2="243" stroke="#f05252" stroke-width="3"/><rect x="186" y="209" width="18" height="26" rx="3" fill="#f05252"/><line x1="222.0" y1="207" x2="222.0" y2="241" stroke="#f05252" stroke-width="3"/><rect x="213" y="215" width="18" height="18" rx="3" fill="#f05252"/><line x1="249.0" y1="197" x2="249.0" y2="243" stroke="#f05252" stroke-width="3"/><rect x="240" y="205" width="18" height="30" rx="3" fill="#f05252"/><line x1="276.0" y1="131" x2="276.0" y2="243" stroke="#22c55e" stroke-width="3"/><rect x="267" y="139" width="18" height="96" rx="3" fill="#22c55e"/><line x1="303.0" y1="203" x2="303.0" y2="239" stroke="#f05252" stroke-width="3"/><rect x="294" y="211" width="18" height="20" rx="3" fill="#f05252"/><circle cx="396" cy="196" r="9.36" fill="#cbd5e1"/><rect x="390.96" y="205.36" width="10.08" height="24.48" rx="7" fill="#cbd5e1"/><line x1="391.68" y1="210.4" x2="377.28" y2="193.12" stroke="#cbd5e1" stroke-width="5.04" stroke-linecap="round"/><line x1="400.32" y1="210.4" x2="414.72" y2="193.12" stroke="#cbd5e1" stroke-width="5.04" stroke-linecap="round"/><line x1="393.12" y1="229.12" x2="387.36" y2="247.84" stroke="#cbd5e1" stroke-width="5.04" stroke-linecap="round"/><line x1="398.88" y1="229.12" x2="404.64" y2="247.84" stroke="#cbd5e1" stroke-width="5.04" stroke-linecap="round"/><path d="M372 178 l24 -12 24 12 -24 12z" fill="#4f8cff"/><rect x="418" y="172" width="3" height="20" fill="#4f8cff"/></g>
+  <text x="300.0" y="312" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="31" font-weight="700" fill="#f1f5f9">One green candle later</text>
+  <text x="300.0" y="348" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="19" fill="#93a2b8">Suddenly an expert in monetary policy.</text>
+  <rect x="248" y="368" width="104" height="4" rx="2" fill="#22c55e" opacity="0.85"/>
+</svg>
