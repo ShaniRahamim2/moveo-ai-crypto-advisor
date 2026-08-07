@@ -62,3 +62,43 @@ diagnosticsRouter.get('/news', async (_req, res) => {
 
   res.json(Object.fromEntries(entries));
 });
+
+const RSS_FEEDS: Record<string, string> = {
+  cointelegraph: 'https://cointelegraph.com/rss',
+  decrypt: 'https://decrypt.co/feed',
+  cryptoslate: 'https://cryptoslate.com/feed/',
+  coindesk: 'https://www.coindesk.com/arc/outboundfeeds/rss',
+};
+
+diagnosticsRouter.get('/rss', async (_req, res) => {
+  const entries = await Promise.all(
+    Object.entries(RSS_FEEDS).map(async ([name, url]) => {
+      const started = Date.now();
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 8000);
+      try {
+        const response = await fetch(url, {
+          signal: controller.signal,
+          redirect: 'follow',
+          headers: { Accept: 'application/rss+xml,application/xml', 'User-Agent': 'moveo-crypto-advisor/1.0' },
+        });
+        const body = await response.text();
+        return [
+          name,
+          {
+            status: response.status,
+            ms: Date.now() - started,
+            items: (body.match(/<item[\s>]/g) ?? []).length,
+            looksLikeRss: body.includes('<rss') || body.includes('<feed'),
+          },
+        ] as const;
+      } catch (err) {
+        return [name, { status: 'error', ms: Date.now() - started, message: (err as Error).message }] as const;
+      } finally {
+        clearTimeout(timer);
+      }
+    }),
+  );
+
+  res.json(Object.fromEntries(entries));
+});
