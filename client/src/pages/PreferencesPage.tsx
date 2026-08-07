@@ -1,33 +1,28 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { PreferencesForm } from '../components/PreferencesForm';
-import { usePreferenceOptions, useSavePreferences } from '../preferences/queries';
-import { useAuth } from '../auth/useAuth';
+import { usePreferenceOptions, usePreferences, useSavePreferences } from '../preferences/queries';
 import { ApiRequestError } from '../lib/api';
 
-export function OnboardingPage() {
-  const { user, setUser } = useAuth();
+export function PreferencesPage() {
   const navigate = useNavigate();
-  const { data: options, isPending, error: optionsError } = usePreferenceOptions();
+  const { data: options, isPending: optionsPending } = usePreferenceOptions();
+  const { data: current, isPending: preferencesPending } = usePreferences();
   const savePreferences = useSavePreferences();
   const [error, setError] = useState<string | null>(null);
 
-  if (isPending) {
+  if (optionsPending || preferencesPending) {
     return (
       <main className="flex min-h-screen items-center justify-center px-4">
-        <p className="text-sm text-slate-400">
-          Loading your options… if the server has been idle this can take up to a minute.
-        </p>
+        <p className="text-sm text-slate-400">Loading your preferences…</p>
       </main>
     );
   }
 
-  if (optionsError || !options) {
+  if (!options) {
     return (
       <main className="flex min-h-screen items-center justify-center px-4">
-        <p className="text-sm text-loss">
-          Could not load the asset list. Refresh to try again.
-        </p>
+        <p className="text-sm text-loss">Could not load the asset list. Refresh to try again.</p>
       </main>
     );
   }
@@ -35,25 +30,26 @@ export function OnboardingPage() {
   return (
     <main className="mx-auto min-h-screen max-w-2xl px-6 py-12">
       <header className="mb-8">
-        <h1 className="text-2xl font-semibold text-white">Welcome, {user?.name}</h1>
+        <Link to="/dashboard" className="text-sm text-accent hover:underline">
+          ← Back to dashboard
+        </Link>
+        <h1 className="mt-3 text-2xl font-semibold text-white">Preferences</h1>
         <p className="mt-1 text-sm text-slate-400">
-          Three questions. They decide what your daily briefing leads with.
+          Changes apply to your dashboard immediately.
         </p>
       </header>
 
       <PreferencesForm
         options={options}
-        submitLabel="Build my dashboard"
+        initial={current?.preferences ?? null}
+        submitLabel="Save changes"
         submittingLabel="Saving…"
         error={error}
         onSubmit={async (payload) => {
           setError(null);
           try {
             await savePreferences.mutateAsync(payload);
-            if (user) {
-              setUser({ ...user, onboardingCompleted: true });
-            }
-            navigate('/dashboard', { replace: true });
+            navigate('/dashboard');
           } catch (err) {
             setError(
               err instanceof ApiRequestError

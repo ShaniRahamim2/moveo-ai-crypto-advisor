@@ -5,6 +5,7 @@ import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { OnboardingPage } from './pages/OnboardingPage';
+import { PreferencesPage } from './pages/PreferencesPage';
 
 export function App() {
   return (
@@ -19,6 +20,7 @@ export function App() {
 
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/preferences" element={<PreferencesPage />} />
         </Route>
 
         <Route path="/" element={<Navigate to="/dashboard" replace />} />

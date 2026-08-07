@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { API_URL, apiFetch } from '../lib/api';
 import { Button } from '../components/ui/Button';
+import { PersonalizationSummary } from '../components/PersonalizationSummary';
+import { usePreferences } from '../preferences/queries';
 import { useAuth } from '../auth/useAuth';
 
 interface HealthReport {
@@ -12,6 +14,7 @@ interface HealthReport {
 // this proves the protected route, the stored JWT and cross-origin API access.
 export function DashboardPage() {
   const { user, signOut } = useAuth();
+  const { data: preferences } = usePreferences();
   const { data, error, isPending } = useQuery({
     queryKey: ['health'],
     queryFn: () => apiFetch<HealthReport>('/api/health'),
@@ -25,6 +28,11 @@ export function DashboardPage() {
           <p className="mt-1 text-sm text-slate-400">
             {user?.name} · {user?.email}
           </p>
+          {preferences?.preferences && (
+            <div className="mt-2">
+              <PersonalizationSummary preferences={preferences.preferences} />
+            </div>
+          )}
         </div>
         <Button variant="secondary" onClick={signOut}>
           Sign out
