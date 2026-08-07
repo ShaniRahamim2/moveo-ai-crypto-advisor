@@ -396,3 +396,78 @@ repeating.
 **Temporary code removed as promised.** The `/api/_diag` probe added at `bdce63d`
 was deleted at `a8ffbc4` before the phase closed, with a checklist line in
 `PROJECT_STATUS.md` so it could not quietly survive to submission.
+
+---
+
+## Phase 6 — AI insight, and the meme images
+
+**Worked on:** the OpenRouter provider, the grounded prompt, the daily insight
+cache, the non-AI fallback, and the meme image pipeline.
+
+**Constraints I set for the AI section, before any of it was written:**
+
+- The insight must reference a concrete figure or headline already rendered on
+  the page. If it could have been written without looking at the data, it has
+  failed.
+- Never buy, sell or hold advice. Never a predicted price. Never an invented
+  number.
+- Daily caching is mandatory, not an optimisation. Free-tier OpenRouter allows
+  roughly 50 requests a day and a reviewer clicking around could exhaust it.
+
+**Decisions I accepted:**
+
+- Prices are deliberately excluded from the cache key. Including them would
+  defeat the cache entirely, since they move every minute. The key is assets +
+  investor type + content preferences + date.
+- The fallback is never written to the cache, so a model failure does not occupy
+  the day's slot and block a real insight on the next refresh. I would have got
+  this wrong.
+- `reasoning: { enabled: false }` is sent explicitly, carried over from the
+  Phase 2 finding that a reasoning model spends its whole token budget thinking
+  and returns empty content.
+
+**Verified by hand, with real model calls:** two profiles produced visibly
+different insights from the same code path. The HODLer briefing opened on
+Bitcoin at $65,111 (+1.00%) and Ethereum at $1,922.33 (+1.30%) and framed them
+for a long-term holder; the day trader briefing led with SOL +1.40% and DOGE
++1.80% and short-term attention. I checked every figure in both against the data
+actually supplied — no invented numbers, no advice, no filler opening. The daily
+cache was then exercised against the live database: first call 3856ms hitting
+the model, second call 76ms from cache, identical text, exactly one row written.
+
+**The meme images — a decision I reversed the model on.** It proposed, and
+initially shipped, self-contained text cards rather than images, arguing that
+hotlinked meme images can 404 during review. I rejected that: "Fun Crypto Meme"
+is a named requirement, in crypto the word means an image, and a reviewer seeing
+text reads the section as unfinished no matter what the README says. The
+robustness argument also disappears once the files are ours. Self-hosting gets
+both properties at once.
+
+It then flagged, correctly, that it could not source recognisable meme formats
+itself — a copyright problem in a public repo — and that it could not extract
+image bytes from files I attached in chat. Both are real limits and it said so
+rather than producing something approximate. It built 12 original illustrations
+and the full self-hosted pipeline, and I supplied two classics myself.
+
+**I dropped three images I had intended to include:** one carried another
+company's logo and watermark, one was assembled from stock photography including
+a car manufacturer's branding, and one used a recognisable format built around a
+real person. None are worth the exposure in a public repository. That screening
+was mine to do, and it is the reason the count is 14 rather than 17.
+
+**A geometry bug it caught by checking rather than assuming.** After generating
+the illustrations it measured the lowest drawn element in each file instead of
+eyeballing them, and found two where the artwork ran into the caption — one by
+60 pixels. Both fixed and re-measured, then confirmed visually.
+
+**A correction it made to itself, in my favour.** It reported that the JSON meme
+manifest was not reaching the build output and would break in production. That
+was wrong — its directory listing had been truncated — and it said so plainly
+once it ran the built module and saw all entries load. I would rather have the
+retraction than a build step that was never needed.
+
+**Manifest safety, because I am hand-editing it.** Three guards: a malformed row
+is skipped with a logged warning instead of crashing the section, a test asserts
+every manifest entry resolves to a file that actually exists on disk, and a test
+asserts ids and image paths are unique. Adding or removing a meme touches only
+`memes.json` and the folder — never code.
