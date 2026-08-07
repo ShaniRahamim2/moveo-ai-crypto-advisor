@@ -4,7 +4,7 @@ Legend: `[ ]` not started · `[x]` done and verified · `[~]` partially done · 
 
 Nothing is marked `[x]` until the behavior has been exercised and observed. Updated after every phase.
 
-Last updated: end of Phase 5.
+Last updated: end of Phase 6.
 
 `/onboarding` and `/preferences` are real. `/dashboard` is still a placeholder
 showing the personalization summary and connectivity only — it is built in Phase 8.
@@ -23,7 +23,7 @@ showing the personalization summary and connectivity only — it is built in Pha
 
 ## P1 — what makes this stand out
 
-- [ ] 10. Real, observable personalization along all three dimensions
+- [~] 10. Real, observable personalization along all three dimensions — assets, investor framing and section order all verified at the service layer; visible on screen once Phase 8 renders the dashboard
 - [~] 11. Provider abstractions with timeout + 429 + failure handling — providers done and tested; the whole-dashboard isolation test lands with `/api/dashboard` in Phase 8
 - [x] 12. API tests including explicit 429 and timeout tests — 64 tests; the timeout test really aborts at 5001ms
 - [x] 13. Editable preferences after onboarding — `/preferences` reuses the onboarding form, pre-filled
@@ -35,6 +35,12 @@ showing the personalization summary and connectivity only — it is built in Pha
 - [ ] 16. Claude Code post-edit lint hook
 - [ ] 17. Health-check keep-alive to mitigate cold starts
 - [ ] 18. Extra market metrics, richer charts, animations
+
+## Onboarding additions agreed for Phase 8
+
+- [ ] Helper line under each investor type and content preference
+- [ ] "Not sure? Start with a popular mix" button prefilling BTC + ETH + SOL, HODLer, Market News (editable before submit)
+- [x] Decided against demographic/background questions — the assignment specifies three questions and the data would feed nothing
 
 ## Build hygiene
 
@@ -61,7 +67,7 @@ showing the personalization summary and connectivity only — it is built in Pha
 | 3. Auth | done | 15 tests passing; verified live and in a browser |
 | 4. Onboarding + preferences + personalization context | done | 44 tests; all 50 CoinGecko ids verified to resolve |
 | 5. Market + News + Meme providers, Charts/Social prefs | done | 64 tests; RSS is the live news tier; temporary diagnostic route removed |
-| 6. AI Insight | not started | |
+| 6. AI Insight | done | 84 tests; daily cache verified live (3856ms -> 76ms, one row) |
 | 7. Feedback | not started | |
 | 8. Dashboard integration + polish | not started | |
 | 9. Documentation | not started | |
