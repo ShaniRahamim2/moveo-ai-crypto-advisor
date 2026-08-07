@@ -20,6 +20,8 @@ export interface FetchOptions {
   timeoutMs: number;
   headers?: Record<string, string>;
   signal?: AbortSignal;
+  method?: 'GET' | 'POST';
+  body?: string;
 }
 
 /**
@@ -41,6 +43,8 @@ export async function fetchWithTimeout(url: string, options: FetchOptions): Prom
     response = await fetch(url, {
       signal: controller.signal,
       redirect: 'follow',
+      method: options.method ?? 'GET',
+      ...(options.body ? { body: options.body } : {}),
       headers: { 'User-Agent': 'moveo-crypto-advisor/1.0', ...options.headers },
     });
   } catch (err) {

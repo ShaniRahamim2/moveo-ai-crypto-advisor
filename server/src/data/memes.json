@@ -82,5 +82,19 @@
     "caption": "Set a price alert",
     "subcaption": "Still checking manually every four minutes.",
     "altText": "A notification bell beside a phone being refreshed repeatedly."
+  },
+  {
+    "id": "hodl-expectation-reality",
+    "imageUrl": "/memes/hodl-expectation-reality.webp",
+    "caption": "How people think HODLing works",
+    "subcaption": "And how it actually goes.",
+    "altText": "A two-panel schematic drawing. The top panel, labelled how people think it is like to HODL, shows a cyclist on a completely flat road with a chequered finish flag ahead. The bottom panel, labelled what it is actually like, shows the same cyclist facing a long course of steep peaks, deep valleys, a water crossing, a tunnel and a rainstorm before reaching the flag."
+  },
+  {
+    "id": "doge-rocket",
+    "imageUrl": "/memes/doge-rocket.png",
+    "caption": "Such rocket",
+    "subcaption": "Very launch. Much conviction.",
+    "altText": "The Shiba Inu dog from the Doge meme, its head attached to the nose of a rocket firing its engines as it launches away from Earth, surrounded by floating Dogecoin coins against a starfield."
   }
 ]
