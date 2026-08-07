@@ -1,0 +1,97 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Neon serves a pooled endpoint (PgBouncer) for application traffic and a direct
+// endpoint for DDL. Migrations fail against the pooler, so they use directUrl.
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum SectionType {
+  MARKET_NEWS
+  COIN_PRICES
+  AI_INSIGHT
+  MEME
+}
+
+enum Vote {
+  UP
+  DOWN
+}
+
+enum InvestorType {
+  HODLER
+  DAY_TRADER
+  NFT_COLLECTOR
+}
+
+enum ContentPreference {
+  MARKET_NEWS
+  CHARTS
+  SOCIAL
+  FUN
+}
+
+model User {
+  id                  String   @id @default(cuid())
+  name                String
+  email               String   @unique
+  passwordHash        String
+  onboardingCompleted Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  preference UserPreference?
+  feedback   Feedback[]
+
+  @@map("users")
+}
+
+model UserPreference {
+  id                 String              @id @default(cuid())
+  userId             String              @unique
+  selectedAssets     String[]
+  investorType       InvestorType
+  contentPreferences ContentPreference[]
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_preferences")
+}
+
+// contentRef identifies the exact item voted on (news URL, meme id, insight hash)
+// so a vote survives the underlying content changing on the next refresh.
+model Feedback {
+  id          String      @id @default(cuid())
+  userId      String
+  sectionType SectionType
+  contentRef  String
+  vote        Vote
+  context     Json?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, sectionType, contentRef])
+  @@index([userId])
+  @@map("feedback")
+}
+
+// One row per personalization context per day. Free-tier OpenRouter allows only
+// ~50 requests/day, so the insight is generated once and reused.
+model InsightCache {
+  id          String   @id @default(cuid())
+  contextHash String   @unique
+  insightText String
+  model       String?
+  generatedAt DateTime @default(now())
+
+  @@index([generatedAt])
+  @@map("insight_cache")
+}

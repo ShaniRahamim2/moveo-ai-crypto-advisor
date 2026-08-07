@@ -1,0 +1,29 @@
+{
+  "name": "moveo-ai-crypto-advisor",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Personalized crypto investor dashboard with onboarding, AI insight of the day, and feedback capture.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "concurrently -n server,client -c blue,magenta \"npm --prefix server run dev\" \"npm --prefix client run dev\"",
+    "build": "npm --prefix server run build && npm --prefix client run build",
+    "test": "npm --prefix server run test",
+    "test:api": "npm --prefix server run test",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "install:all": "npm install && npm --prefix server install && npm --prefix client install"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.0",
+    "concurrently": "^9.2.1",
+    "eslint": "^9.39.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "globals": "^16.5.0",
+    "prettier": "^3.6.2",
+    "typescript-eslint": "^8.46.4"
+  }
+}
