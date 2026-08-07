@@ -3,7 +3,7 @@ import { prisma } from '../lib/prisma.js';
 import { logger } from '../lib/logger.js';
 import { ProviderError } from '../lib/httpClient.js';
 import { OpenRouterProvider } from '../providers/ai/openrouter.provider.js';
-import { buildFallbackInsight } from '../providers/ai/prompt.js';
+import { buildFallbackInsight, clampInsight } from '../providers/ai/prompt.js';
 import type { AIProvider, InsightInput } from '../providers/ai/types.js';
 import type { PersonalizationContext } from './personalization.js';
 import type { CoinPrice, NewsItem, ProviderResult } from '../providers/types.js';
@@ -42,7 +42,9 @@ export function buildContextHash(
 }
 
 export class InsightService {
-  constructor(private readonly provider: AIProvider & { configured?: boolean } = new OpenRouterProvider()) {}
+  constructor(
+    private readonly provider: AIProvider & { configured?: boolean } = new OpenRouterProvider(),
+  ) {}
 
   async getInsight(
     context: PersonalizationContext,
@@ -137,7 +139,9 @@ export class InsightService {
       if (!row) return null;
 
       return {
-        text: row.insightText,
+        // Clamped on read as well as on write, so a row cached before the cap
+        // existed cannot render an over-long insight.
+        text: clampInsight(row.insightText),
         disclaimer: DISCLAIMER,
         generatedAt: row.generatedAt.toISOString(),
         ...(row.model ? { model: row.model } : {}),

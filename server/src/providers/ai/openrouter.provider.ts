@@ -1,5 +1,5 @@
 import { fetchJson, ProviderError } from '../../lib/httpClient.js';
-import { buildInsightPrompt, SYSTEM_PROMPT } from './prompt.js';
+import { buildInsightPrompt, clampInsight, SYSTEM_PROMPT } from './prompt.js';
 import type { AIProvider, InsightInput } from './types.js';
 
 const TIMEOUT_MS = 12_000;
@@ -58,6 +58,6 @@ export class OpenRouterProvider implements AIProvider {
       throw new ProviderError('parse_error', 'Model returned no content');
     }
 
-    return content;
+    return clampInsight(content);
   }
 }

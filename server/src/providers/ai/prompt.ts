@@ -45,6 +45,37 @@ export function buildInsightPrompt(input: InsightInput): string {
   ].join('\n');
 }
 
+const MAX_WORDS = 120;
+
+/**
+ * The prompt asks for 60–110 words and the model does not reliably comply — one
+ * live response came back at 174, which fills a phone screen on its own. The
+ * limit is therefore enforced here rather than requested, trimming at a sentence
+ * boundary so the text never ends mid-thought.
+ */
+export function clampInsight(text: string, maxWords = MAX_WORDS): string {
+  const clean = text.replace(/\s+/g, ' ').trim();
+  if (clean.split(' ').length <= maxWords) return clean;
+
+  const sentences = clean.match(/[^.!?]+[.!?]+(\s|$)/g) ?? [clean];
+  const kept: string[] = [];
+  let words = 0;
+
+  for (const sentence of sentences) {
+    const count = sentence.trim().split(/\s+/).length;
+    if (words + count > maxWords && kept.length > 0) break;
+    kept.push(sentence.trim());
+    words += count;
+  }
+
+  // A single opening sentence longer than the cap still has to be cut somewhere.
+  if (kept.length === 1 && words > maxWords) {
+    return `${kept[0]!.split(/\s+/).slice(0, maxWords).join(' ')}…`;
+  }
+
+  return kept.join(' ');
+}
+
 /**
  * Used when the model is unavailable. Assembled from the same real market data
  * the page is already showing, and labelled in the UI as generated without AI —

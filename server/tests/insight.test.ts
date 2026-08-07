@@ -7,7 +7,9 @@ const { InsightService, buildContextHash, DISCLAIMER } = await import(
   '../src/services/insight.service.js'
 );
 const { buildPersonalizationContext } = await import('../src/services/personalization.js');
-const { buildInsightPrompt, SYSTEM_PROMPT } = await import('../src/providers/ai/prompt.js');
+const { buildInsightPrompt, clampInsight, SYSTEM_PROMPT } = await import(
+  '../src/providers/ai/prompt.js'
+);
 const { ProviderError } = await import('../src/lib/httpClient.js');
 
 const hodler = buildPersonalizationContext({
@@ -222,3 +224,29 @@ describe('insight prompt', () => {
     expect(SYSTEM_PROMPT).toMatch(/ever-evolving world of cryptocurrency/i);
   });
 });
+
+describe('insight length cap', () => {
+  it('leaves a short insight untouched', () => {
+    const short = 'BTC rose 1.00% to $65,111 today. ETH followed at $1,922.33.';
+    expect(clampInsight(short)).toBe(short);
+  });
+
+  it('trims an over-long insight at a sentence boundary', () => {
+    const sentence = 'Bitcoin moved modestly against a backdrop of steady institutional flows. ';
+    const long = sentence.repeat(12);
+
+    const result = clampInsight(long);
+
+    expect(result.split(/\s+/).length).toBeLessThanOrEqual(120);
+    expect(result.trimEnd()).toMatch(/[.!?]$/);
+    expect(result.length).toBeLessThan(long.length);
+  });
+
+  it('cuts a single runaway sentence rather than returning it whole', () => {
+    const runaway = `Bitcoin ${'moved '.repeat(200)}today`;
+    const result = clampInsight(runaway);
+
+    expect(result.split(/\s+/).length).toBeLessThanOrEqual(121);
+    expect(result.endsWith('…')).toBe(true);
+  });
+})
