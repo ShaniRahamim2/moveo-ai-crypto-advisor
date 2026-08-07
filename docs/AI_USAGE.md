@@ -529,3 +529,95 @@ snapshot.
 ones this test created. I queried and printed them first, deleted by the exact
 content reference I had generated, and confirmed the table returned to its
 seeded count of three rather than issuing a broad delete.
+
+---
+
+## Phase 8 — dashboard assembly and interface
+
+**Worked on:** `GET /api/dashboard`, the four section components, feedback wired
+in, the refresh control, coin logos, the sparkline, the onboarding additions, and
+the visual pass.
+
+**Two things from the previous phase that belong here.**
+
+- **A test nobody asked for.** It added a case that posts `userId: "someone_else"`
+  in the request body and asserts the upsert still keys on the authenticated
+  user. Nothing in my specification called for it. That is the difference between
+  proving an endpoint works and proving it cannot be abused, and it is the kind
+  of test that only gets written if someone is thinking about how the thing
+  fails rather than how it succeeds.
+- **The content reference design.** Votes are keyed to the content they were cast
+  on, with references that are order-insensitive but content-sensitive:
+  `prices:BTC,ETH` and `prices:ETH,BTC` are the same reference, so a vote
+  survives a user reordering their assets, while a different set of news URLs
+  produces a different reference, so a vote never carries over to unrelated
+  headlines. Most implementations get this wrong in one direction — either the
+  vote detaches on any trivial change, or it sticks to a section regardless of
+  what is in it. Both directions are tested.
+
+**The most serious mistake of the build, and how it surfaced.** The Phase 7
+commit contained a TypeScript error: the feedback context was typed
+`Record<string, unknown>` where Prisma expects its own JSON input type. Lint
+passed. All 100 tests passed. Vitest does not type-check, and `npm run build` was
+not run before that commit. The Render deploy failed, the previous instance kept
+serving, and `/api/health` stayed green — so nothing looked wrong. Production ran
+a stale build with no feedback or dashboard routes until this phase caught it.
+
+Two things worth drawing out. First, a green test suite is not a green build, and
+the gap between them is exactly wide enough to hide a type error. Second, a
+failed deploy is invisible when the previous instance keeps serving; health
+checks confirm *something* is running, not that it is the thing you just pushed.
+The fix was one line. Finding it took a direct check of whether the new routes
+actually existed in production. `npm run build` now runs before every commit, and
+deploys are verified by asking production for the new endpoints rather than
+assuming a push means a release.
+
+**Two lint errors that were real design problems, not noise.**
+
+- `react-hooks/refs` rejected reading `previousMemeId.current` during render. The
+  rule was right for a reason specific to this feature: what matters is which
+  meme was on screen when the refresh was clicked, and a value captured during
+  render is already stale by then. The hook now takes a getter and reads the ref
+  inside the fetch, which is both rule-compliant and more correct.
+- `react-hooks/set-state-in-effect` rejected the "waking up the server" flag,
+  for the second time in this build. Fixed by raising the flag from the timer and
+  clearing it in the effect's cleanup, rather than suppressing the rule.
+
+**Problems I found by looking at the running app rather than the tests.**
+
+- **The AI insight came back at 174 words** against a ~120 cap, filling an entire
+  phone screen. The prompt asks for 60–110 and the model simply did not comply.
+  Instructions to a model are a request, not a constraint, so the cap is now
+  enforced in code — trimmed at a sentence boundary so the text never ends
+  mid-thought, and applied on read as well as on write so an already-cached long
+  insight cannot render. Verified in production: 174 words became 118.
+- **Several meme illustrations sat low in their canvas**, leaving a third of the
+  card empty above the artwork. A first attempt to measure the artwork by parsing
+  the SVG source failed on path syntax like `q0-20 17-46`. Rather than write a
+  fragile path parser, the bounding boxes were measured in a real browser with
+  `getBBox()` and the measured offsets baked in. Exact, and it took one pass.
+- **The news vote buttons wrapped below the section title** on a narrow viewport,
+  because the source label listed all four publications. Fixed by truncating the
+  label and shortening it to "Live RSS feeds" — each headline already carries its
+  own publication, so nothing was lost.
+
+**A near-miss I want recorded.** Regenerating the memes overwrote `memes.json`,
+silently dropping the two images I had supplied. It was caught immediately
+because the file-existence test covers the manifest, but it is a reminder that a
+generator writing into a hand-edited file is a hazard regardless of how careful
+the generator is.
+
+**Verified by hand, in a browser at a real 375px viewport rather than a resized
+desktop window:** all four sections rendering with live data; a vote on prices,
+news and the insight surviving a hard reload; the meme changing on refresh
+(meme-001 to meme-005) with the acknowledgement microcopy appearing; coin logos
+loading with a symbol fallback wired for failure; sparklines present for the
+Charts profile only; and the starter mix prefilling BTC, ETH, SOL with HODLer and
+Market News while leaving everything editable.
+
+**On database cleanup, again following the standing rule:** before removing test
+accounts I printed every account in the database and listed exactly which would
+be deleted and which kept. That listing showed an account belonging to neither me
+nor the model — someone had found the public URL and signed up. It was left
+alone. A pattern-matched delete without looking first would have been fine here
+by luck, not by design.
