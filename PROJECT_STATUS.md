@@ -4,7 +4,7 @@ Legend: `[ ]` not started · `[x]` done and verified · `[~]` partially done · 
 
 Nothing is marked `[x]` until the behavior has been exercised and observed. Updated after every phase.
 
-Last updated: end of Phase 6.
+Last updated: end of Phase 7.
 
 `/onboarding` and `/preferences` are real. `/dashboard` is still a placeholder
 showing the personalization summary and connectivity only — it is built in Phase 8.
@@ -14,7 +14,7 @@ showing the personalization summary and connectivity only — it is built in Pha
 - [x] 1. Signup (name, email, password) + login with JWT; passwords hashed; protected routes — verified against the live database and in a browser
 - [x] 2. First-login onboarding: crypto assets, investor type, content preferences saved to DB — verified in a browser end to end
 - [ ] 3. Dashboard with all four sections: Market News, Coin Prices, AI Insight of the Day, Fun Crypto Meme
-- [ ] 4. Thumbs up/down on every section, persisted to DB, restored after refresh, changeable
+- [~] 4. Thumbs up/down on every section, persisted to DB, restored after refresh, changeable — API and `VoteButtons` done and verified; wired into the dashboard in Phase 8
 - [ ] 5. Meme changes when the dashboard refreshes
 - [x] 6. Deployed frontend + backend + managed Postgres, publicly reachable — Vercel + Render + Neon, verified in production
 - [x] 7. Public GitHub repo, no secrets committed, readable commit history — repo created public and verified in Phase 0 (not a fork, not a template); secret scan repeated at Phase 10
@@ -68,7 +68,7 @@ showing the personalization summary and connectivity only — it is built in Pha
 | 4. Onboarding + preferences + personalization context | done | 44 tests; all 50 CoinGecko ids verified to resolve |
 | 5. Market + News + Meme providers, Charts/Social prefs | done | 64 tests; RSS is the live news tier; temporary diagnostic route removed |
 | 6. AI Insight | done | 84 tests; daily cache verified live (3856ms -> 76ms, one row) |
-| 7. Feedback | not started | |
+| 7. Feedback | done | 100 tests; upsert verified against the live database (one row after a changed vote) |
 | 8. Dashboard integration + polish | not started | |
 | 9. Documentation | not started | |
 | 10. Final QA on production | not started | |

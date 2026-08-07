@@ -491,3 +491,41 @@ is skipped with a logged warning instead of crashing the section, a test asserts
 every manifest entry resolves to a file that actually exists on disk, and a test
 asserts ids and image paths are unique. Adding or removing a meme touches only
 `memes.json` and the folder — never code.
+
+---
+
+## Phase 7 — feedback
+
+**Worked on:** the vote upsert API, vote restoration, content references, and the
+vote UI component.
+
+**Decisions I accepted:**
+
+- **Content references are generated server-side and handed to the client** in
+  the dashboard payload, rather than assembled in the browser. The client posts
+  back a string it was given. This keeps the definition of "what was voted on" in
+  one module instead of scattered across components, and means a client cannot
+  invent a reference.
+- **References are order-insensitive but content-sensitive.** `prices:BTC,ETH`
+  and `prices:ETH,BTC` are the same reference, so a vote survives the user
+  reordering their assets; a different set of news URLs produces a different
+  reference, so a vote does not silently carry over to unrelated content. Both
+  directions are tested.
+- **The personalization context is snapshotted server-side at vote time**, read
+  from the database rather than trusted from the request body. A vote without the
+  context it was cast in cannot train anything later, and a client-supplied
+  context could be anything.
+- **Optimistic UI with rollback** on the vote mutation. A vote that takes a round
+  trip to appear reads as broken.
+
+**Verified by hand against the live database:** unauthorized returns 401; an
+invalid section type returns 400 and never reaches the database; an UP vote
+followed by a DOWN vote on the same reference leaves **exactly one row** with
+`vote: DOWN`, not two rows; `GET /api/feedback` returns the stored votes for
+restoration; and the stored `context` column contained the real preference
+snapshot.
+
+**On cleanup, following the standing rule:** the only rows I deleted were the
+ones this test created. I queried and printed them first, deleted by the exact
+content reference I had generated, and confirmed the table returned to its
+seeded count of three rather than issuing a broad delete.
