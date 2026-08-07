@@ -18,6 +18,8 @@ export interface CoinPrice {
   price: number;
   change24hPercent: number;
   lastUpdated: string;
+  /** Logo from the same /coins/markets response — no extra request. */
+  imageUrl?: string;
   /** Present only when the user selected the Charts content preference. */
   sparkline7d?: number[];
 }

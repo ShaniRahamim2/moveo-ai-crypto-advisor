@@ -43,6 +43,7 @@ export function OnboardingPage() {
 
       <PreferencesForm
         options={options}
+        showStarter
         submitLabel="Build my dashboard"
         submittingLabel="Saving…"
         error={error}

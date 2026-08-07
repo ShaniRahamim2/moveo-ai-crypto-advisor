@@ -46,9 +46,11 @@ export class LayeredNewsProvider implements NewsProvider {
       });
     }
 
+    // Each headline carries its own publication, so the section label only needs
+    // to say which tier served — a full source list overflows the card header.
     tiers.push({
       name: 'rss',
-      label: 'Cointelegraph, Decrypt, CoinDesk, CryptoSlate',
+      label: 'Live RSS feeds',
       status: 'ok',
       fetch: () => this.rss.getNews(),
     });

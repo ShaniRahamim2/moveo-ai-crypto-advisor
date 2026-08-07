@@ -31,19 +31,46 @@ export function getOptions(_req: Request, res: Response) {
     coins: SUPPORTED_COINS,
     maxAssets: MAX_ASSETS,
     investorTypes: [
-      { value: 'HODLER', label: 'HODLer', description: 'Long-term positions, held through cycles' },
-      { value: 'DAY_TRADER', label: 'Day Trader', description: 'Short-term moves and volatility' },
+      {
+        value: 'HODLER',
+        label: 'HODLer',
+        description: 'You buy and hold for the long term.',
+      },
+      {
+        value: 'DAY_TRADER',
+        label: 'Day Trader',
+        description: 'You watch short-term moves.',
+      },
       {
         value: 'NFT_COLLECTOR',
         label: 'NFT Collector',
-        description: 'Ecosystem and on-chain activity',
+        description: 'You follow collections and on-chain activity.',
       },
     ],
     contentPreferences: [
-      { value: 'MARKET_NEWS', label: 'Market News', description: 'Headlines for your assets' },
-      { value: 'CHARTS', label: 'Charts', description: '7-day price trend on each coin' },
-      { value: 'SOCIAL', label: 'Social', description: 'What the community is reacting to' },
-      { value: 'FUN', label: 'Fun', description: 'A crypto meme with your briefing' },
+      {
+        value: 'MARKET_NEWS',
+        label: 'Market News',
+        description: 'Recent headlines about the coins you picked.',
+      },
+      {
+        value: 'CHARTS',
+        label: 'Charts',
+        description: 'A 7-day price trend line on each coin.',
+      },
+      {
+        value: 'SOCIAL',
+        label: 'Social',
+        description: 'What the community is reacting to.',
+      },
+      { value: 'FUN', label: 'Fun', description: 'A crypto meme with your briefing.' },
     ],
+    // Offered to anyone who does not yet know what to pick. Fully editable
+    // before submitting — it fills the form in, it does not skip it.
+    starterMix: {
+      selectedAssets: ['BTC', 'ETH', 'SOL'],
+      investorType: 'HODLER',
+      contentPreferences: ['MARKET_NEWS'],
+    },
   });
 }

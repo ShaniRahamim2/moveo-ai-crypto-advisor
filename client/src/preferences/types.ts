@@ -18,6 +18,11 @@ export interface PreferenceOptions {
   maxAssets: number;
   investorTypes: OptionEntry<InvestorType>[];
   contentPreferences: OptionEntry<ContentPreference>[];
+  starterMix: {
+    selectedAssets: string[];
+    investorType: InvestorType;
+    contentPreferences: ContentPreference[];
+  };
 }
 
 export interface Preferences {

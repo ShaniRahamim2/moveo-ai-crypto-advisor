@@ -15,6 +15,7 @@ interface CoinGeckoMarket {
   current_price: number;
   price_change_percentage_24h: number | null;
   last_updated: string;
+  image?: string;
   sparkline_in_7d?: { price: number[] };
 }
 
@@ -110,6 +111,7 @@ export class CoinGeckoProvider implements MarketDataProvider {
           price: market.current_price,
           change24hPercent: market.price_change_percentage_24h ?? 0,
           lastUpdated: market.last_updated,
+          ...(market.image ? { imageUrl: market.image } : {}),
         };
 
         if (includeSparklines && market.sparkline_in_7d?.price?.length) {

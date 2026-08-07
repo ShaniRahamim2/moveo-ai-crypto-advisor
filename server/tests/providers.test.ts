@@ -190,7 +190,7 @@ describe('LayeredNewsProvider', () => {
 
     expect(cryptoPanic.getNews).toHaveBeenCalled();
     expect(result.status).toBe('ok');
-    expect(result.source).toMatch(/Cointelegraph/);
+    expect(result.source).toBe('Live RSS feeds');
     expect(result.data.length).toBeGreaterThan(0);
   });
 

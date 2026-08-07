@@ -25,6 +25,8 @@ interface PreferencesFormProps {
     contentPreferences: ContentPreference[];
   }) => Promise<void>;
   error?: string | null;
+  /** Offered during onboarding only — pointless on the edit screen. */
+  showStarter?: boolean;
 }
 
 export function PreferencesForm({
@@ -34,6 +36,7 @@ export function PreferencesForm({
   submittingLabel,
   onSubmit,
   error,
+  showStarter = false,
 }: PreferencesFormProps) {
   const [draft, setDraft] = useState<PreferencesDraft>({
     selectedAssets: initial?.selectedAssets ?? [],
@@ -72,8 +75,32 @@ export function PreferencesForm({
     }
   }
 
+  const isEmpty =
+    draft.selectedAssets.length === 0 &&
+    draft.investorType === null &&
+    draft.contentPreferences.length === 0;
+
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-8">
+      {showStarter && isEmpty && options.starterMix && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-edge bg-raised px-4 py-3">
+          <p className="text-sm text-slate-400">New to this? Start from a common setup.</p>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() =>
+              setDraft({
+                selectedAssets: [...options.starterMix.selectedAssets],
+                investorType: options.starterMix.investorType,
+                contentPreferences: [...options.starterMix.contentPreferences],
+              })
+            }
+          >
+            Not sure? Start with a popular mix
+          </Button>
+        </div>
+      )}
+
       <fieldset className="flex flex-col gap-3">
         <legend className="text-sm font-medium text-slate-200">
           Which assets are you interested in?
