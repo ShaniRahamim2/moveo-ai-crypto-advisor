@@ -14,7 +14,7 @@ Last updated: end of Phase 0.
 - [ ] 4. Thumbs up/down on every section, persisted to DB, restored after refresh, changeable
 - [ ] 5. Meme changes when the dashboard refreshes
 - [ ] 6. Deployed frontend + backend + managed Postgres, publicly reachable
-- [!] 7. Public GitHub repo, no secrets committed, readable commit history — local repo initialized in Phase 0; remote blocked on `gh` install (B1)
+- [x] 7. Public GitHub repo, no secrets committed, readable commit history — repo created public and verified in Phase 0 (not a fork, not a template); secret scan repeated at Phase 10
 - [ ] 8. `README.md`, `docs/ASSIGNMENT_OVERVIEW.md`, `docs/AI_USAGE.md`, `docs/FEEDBACK_MODEL_IMPROVEMENT.md`
 - [ ] 9. Read-only DB access path for the reviewer (see amendment A2 below)
 
@@ -48,8 +48,8 @@ Last updated: end of Phase 0.
 
 | Phase | Status | Notes |
 |---|---|---|
-| 0. Env, repo, hygiene files | done | `gh` was not installed; local scaffold committed, remote pending |
-| 1. Design proposal | awaiting approval | |
+| 0. Env, repo, hygiene files | done | `gh` installed mid-phase; repo created public under ShaniRahamim2, `06ee35f` pushed |
+| 1. Design proposal | awaiting approval | Blocked on B4 (Neon) for the DB half of Phase 2 |
 | 2. Scaffold + deploy skeleton + Neon + DB access | not started | |
 | 3. Auth | not started | |
 | 4. Onboarding + preferences + personalization context | not started | |
