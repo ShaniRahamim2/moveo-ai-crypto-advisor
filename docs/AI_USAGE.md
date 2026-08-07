@@ -311,9 +311,88 @@ was flagged rather than silently chosen.
   seven preference combinations, and one that the AI context contains no email,
   password, token or user id.
 
+**Spec ambiguity I surfaced and resolved.** The build plan said "cap selection at
+3–8 assets" in one sentence and "require at least one asset" in the next. Those
+disagree about the minimum. It implemented max 8 / min 1 and flagged the conflict
+rather than picking silently. I confirmed that reading: a holder with only
+Bitcoin is a real user, and rejecting them would be worse than allowing a
+single-asset dashboard. The 3–5 suggestion stays as on-screen guidance.
+
 **A near miss during cleanup.** The cleanup step for test accounts was about to
 be run broadly against the users table. Listing the rows first showed a third
 account that was not a test fixture — a real signup made while verifying the
 deployment. Checking before deleting is the only reason it survived. Nothing
 should delete from a shared database without looking at what it is about to
 remove first.
+
+---
+
+## Phase 5 — market, news and meme providers
+
+**Worked on:** the HTTP client with enforced timeouts and error classification,
+the TTL cache, CoinGecko prices, the three-tier news provider, the meme provider,
+and the 429 and timeout tests.
+
+**A decision I made against its recommendation.** After CryptoPanic failed, it
+proposed shipping the curated static fallback and offered live RSS only as an
+alternative I might take instead. I rejected that and required all three layered
+behind one interface, CryptoPanic first because it is the only tier carrying the
+community signal that the Social preference needs. A P0 section serving visibly
+sample data reads as unfinished even where the assignment permits it. This turned
+out to matter: CryptoPanic is dead, and without the RSS tier the news section
+would have shipped as static sample content.
+
+**Verify before building, applied twice, and it paid for itself both times.**
+
+- I required the CryptoPanic retry to run from the deployed backend rather than
+  from a laptop, on the theory that the origin might matter. It did not: from
+  Render the v1 path returns the same Cloudflare challenge and every documented
+  v2 plan segment returns 404. I cannot distinguish "wrong plan segment" from
+  "Cloudflare blocks datacenter IPs", but from where the app actually runs it
+  does not work, and that is the operative fact.
+- Before building on RSS I had it probe the four candidate feeds from Render as
+  well. All four returned real RSS in 97–483ms. Had they been blocked the same
+  way, two hours of provider work would have been wasted.
+
+**A real bug that only a live call would have found.** Running the finished
+providers against the real APIs produced a headline tagged with both BTC and
+NEAR: *"Why Bitcoin's BIP-110 refuses to die despite near-zero miner support."*
+The asset detector was matching symbols case-insensitively, so `near-zero`
+matched the NEAR token. Several symbols are ordinary English words — ONE, SUI,
+TON have the same failure. Fixed by matching symbols case-sensitively (tickers
+appear in caps in headlines) while keeping coin names case-insensitive, with four
+regression tests. Every mock-based test passed both before and after the fix;
+only real data exposed it.
+
+**Decisions I accepted:**
+
+- 429 is classified separately from other HTTP errors in the shared client, so
+  "never retry a 429" is enforced in one place instead of remembered at each call
+  site. The test asserts exactly one fetch call.
+- Stale cache is served, labelled, in preference to an empty section when a
+  provider is rate limited.
+- The layered news provider reports which tier served, and that string is carried
+  through to the UI rather than being logged and discarded.
+
+**Cut, and recorded as cut.** The Social preference now only reorders sections.
+The ranking code that applies a community signal exists and is tested, but no
+reachable tier supplies one, and inventing a score from RSS data would be
+fabricating a signal. Per your instruction, not forced. This is a genuine
+reduction against amendment 17.1 and `PROJECT_STATUS.md` marks it `[!]`, not
+done.
+
+**A self-inflicted error worth recording.** A stray `SAMPLE` constant with a
+nonsense type annotation was written into the static news module and then removed
+before commit — dead code that would have shipped had it not been re-read. A
+separate mistake put an `await import` inside a non-async `describe` block, which
+failed the whole test file to load; the suite caught it immediately.
+
+**Verified by hand against live APIs:** two contrasting profiles returned
+different coins in the user's own selection order, with 168-point sparklines
+present for the Charts profile and absent for the other; news returned six live
+items from four feeds with correct asset tagging; the meme rotated without
+repeating.
+
+**Temporary code removed as promised.** The `/api/_diag` probe added at `bdce63d`
+was deleted at `a8ffbc4` before the phase closed, with a checklist line in
+`PROJECT_STATUS.md` so it could not quietly survive to submission.

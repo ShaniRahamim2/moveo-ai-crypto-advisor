@@ -4,7 +4,7 @@ Legend: `[ ]` not started · `[x]` done and verified · `[~]` partially done · 
 
 Nothing is marked `[x]` until the behavior has been exercised and observed. Updated after every phase.
 
-Last updated: end of Phase 4.
+Last updated: end of Phase 5.
 
 `/onboarding` and `/preferences` are real. `/dashboard` is still a placeholder
 showing the personalization summary and connectivity only — it is built in Phase 8.
@@ -24,8 +24,8 @@ showing the personalization summary and connectivity only — it is built in Pha
 ## P1 — what makes this stand out
 
 - [ ] 10. Real, observable personalization along all three dimensions
-- [ ] 11. Provider abstractions with timeout + 429 + failure handling; one dead provider does not kill the dashboard
-- [ ] 12. API tests including explicit 429 and timeout tests
+- [~] 11. Provider abstractions with timeout + 429 + failure handling — providers done and tested; the whole-dashboard isolation test lands with `/api/dashboard` in Phase 8
+- [x] 12. API tests including explicit 429 and timeout tests — 64 tests; the timeout test really aborts at 5001ms
 - [x] 13. Editable preferences after onboarding — `/preferences` reuses the onboarding form, pre-filled
 - [ ] 14. Loading/skeleton, empty, and partial-error states; responsive layout
 - [ ] 15. Seeded demo account so the reviewer can log in without signing up
@@ -36,10 +36,14 @@ showing the personalization summary and connectivity only — it is built in Pha
 - [ ] 17. Health-check keep-alive to mitigate cold starts
 - [ ] 18. Extra market metrics, richer charts, animations
 
+## Build hygiene
+
+- [x] Temporary `/api/_diag` route removed before Phase 5 closed — added at `bdce63d`, removed at `a8ffbc4`; no references remain in `src/` or `tests/`
+
 ## Amendments (CLAUDE.md §17)
 
-- [~] A1. "Charts" preference renders an inline SVG 7-day sparkline per coin row (no charting library) — context flag `includeSparklines` done; rendering in Phase 5
-- [~] A1. "Social" preference weights news toward CryptoPanic community signal and surfaces it — context flag `weightNewsBySocialSignal` done; provider work in Phase 5
+- [~] A1. "Charts" preference renders an inline SVG 7-day sparkline per coin row (no charting library) — provider returns 168-point series when selected; SVG rendering in Phase 8
+- [!] A1. "Social" preference weights news toward CryptoPanic community signal — CUT to reordering only. CryptoPanic unreachable from both a residential IP and Render; ranking code exists and is tested but no live tier supplies a signal
 - [x] A1. Test asserting all four content preferences produce an observable difference
 - [x] A2. `scripts/create-readonly-role.sql` committed, no credentials
 - [x] A2. Read-only role connected to; SELECT succeeds and write is rejected, both observed
@@ -56,7 +60,7 @@ showing the personalization summary and connectivity only — it is built in Pha
 | 2. Scaffold + deploy skeleton + Neon + DB access | done | Live on Render + Vercel + Neon; CORS, SPA fallback and full login verified in production |
 | 3. Auth | done | 15 tests passing; verified live and in a browser |
 | 4. Onboarding + preferences + personalization context | done | 44 tests; all 50 CoinGecko ids verified to resolve |
-| 5. Market + News + Meme providers, Charts/Social prefs | not started | |
+| 5. Market + News + Meme providers, Charts/Social prefs | done | 64 tests; RSS is the live news tier; temporary diagnostic route removed |
 | 6. AI Insight | not started | |
 | 7. Feedback | not started | |
 | 8. Dashboard integration + polish | not started | |
