@@ -16,7 +16,7 @@ Last updated: end of Phase 0.
 - [ ] 6. Deployed frontend + backend + managed Postgres, publicly reachable
 - [x] 7. Public GitHub repo, no secrets committed, readable commit history — repo created public and verified in Phase 0 (not a fork, not a template); secret scan repeated at Phase 10
 - [ ] 8. `README.md`, `docs/ASSIGNMENT_OVERVIEW.md`, `docs/AI_USAGE.md`, `docs/FEEDBACK_MODEL_IMPROVEMENT.md`
-- [ ] 9. Read-only DB access path for the reviewer (see amendment A2 below)
+- [x] 9. Read-only DB access path for the reviewer — `moveo_readonly` created, connected to, reads allowed and all writes rejected
 
 ## P1 — what makes this stand out
 
@@ -38,19 +38,19 @@ Last updated: end of Phase 0.
 - [ ] A1. "Charts" preference renders an inline SVG 7-day sparkline per coin row (no charting library) — Phase 5
 - [ ] A1. "Social" preference weights news toward CryptoPanic community signal and surfaces it — Phase 5
 - [ ] A1. Test asserting all four content preferences produce an observable difference — Phase 5
-- [ ] A2. `scripts/create-readonly-role.sql` committed, no credentials — Phase 2
-- [ ] A2. Read-only role connected to; SELECT succeeds and write is rejected, both observed — Phase 2
-- [ ] A2. `docs/DB_ACCESS.md` committed, no credentials — Phase 2
-- [ ] A2. Seed leaves real rows in every table, feedback included — Phase 2
-- [ ] A3. `docs/AI_USAGE.md` opens with the full-honesty statement, written incrementally per phase
+- [x] A2. `scripts/create-readonly-role.sql` committed, no credentials
+- [x] A2. Read-only role connected to; SELECT succeeds and write is rejected, both observed
+- [x] A2. `docs/DB_ACCESS.md` committed, no credentials
+- [x] A2. Seed leaves real rows in every table — users 2, prefs 2, feedback 3, insight_cache 1
+- [x] A3. `docs/AI_USAGE.md` opens with the full-honesty statement, written incrementally per phase
 
 ## Phase log
 
 | Phase | Status | Notes |
 |---|---|---|
 | 0. Env, repo, hygiene files | done | `gh` installed mid-phase; repo created public under ShaniRahamim2, `06ee35f` pushed |
-| 1. Design proposal | awaiting approval | Blocked on B4 (Neon) for the DB half of Phase 2 |
-| 2. Scaffold + deploy skeleton + Neon + DB access | not started | |
+| 1. Design proposal | approved | |
+| 2. Scaffold + deploy skeleton + Neon + DB access | partial | Scaffold, migration, seed and read-only role done. Hosting services not yet created; CryptoPanic unreachable (see risks) |
 | 3. Auth | not started | |
 | 4. Onboarding + preferences + personalization context | not started | |
 | 5. Market + News + Meme providers, Charts/Social prefs | not started | |
