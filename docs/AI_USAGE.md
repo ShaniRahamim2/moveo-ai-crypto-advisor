@@ -256,3 +256,64 @@ instinct on seeing "form does not submit" is to start changing the form.
 
 **Accepted without close review:** the Tailwind utility classes on the auth
 screens, verified visually instead.
+
+---
+
+## Phase 4 — onboarding, preferences, personalization
+
+**Worked on:** the supported coin list, the onboarding quiz, preference storage,
+the editable preferences screen, and `buildPersonalizationContext`.
+
+**A constraint I set, and why it mattered.** I required the asset picker to be a
+searchable multi-select over a real coin list rather than free text. A free-text
+symbol that does not resolve to a CoinGecko id empties the prices section with no
+visible error — the worst kind of bug, because nothing looks broken. This is
+enforced in three places: the picker only offers real coins, the Zod schema
+rejects any symbol outside the list, and the CoinGecko id is stored explicitly in
+the checked-in list rather than guessed at runtime.
+
+It went one better than I asked and generated the list from a live CoinGecko
+call, then verified all 50 ids resolve by requesting them back in a single
+request: 50 requested, 50 resolved. Generating rather than hand-writing removes
+the transcription errors that make this failure mode common.
+
+**Decisions I accepted:**
+
+- Saving preferences and flipping `onboardingCompleted` happen in one
+  transaction. Its reasoning: a saved preference with the flag still false traps
+  the user on the onboarding screen forever. Correct, and I would not have
+  thought of it before it happened in production.
+- One `PreferencesForm` shared by onboarding and the edit screen, pre-filled from
+  stored values in the second case. Avoids two forms drifting apart.
+- Content preference weights, rather than hardcoded orderings per combination.
+  Four preferences give sixteen combinations; a weight table handles all of them
+  in a few lines and is far easier to test.
+
+**A judgement call I want on record.** The spec says "cap selection at 3–8
+assets" in one sentence and "require at least one asset" in the next. These
+disagree about the minimum. It implemented a maximum of 8 and a minimum of 1,
+with "three to five works well" as on-screen guidance rather than a hard gate. I
+am comfortable with that reading — rejecting a user who genuinely only holds
+Bitcoin would be worse than the alternative — but it is an interpretation and it
+was flagged rather than silently chosen.
+
+**Verified by hand:**
+
+- The full onboarding flow in a browser on a newly created account: searched the
+  picker, selected SOL and DOGE, chose Day Trader and Social + Fun, submitted,
+  and landed on a dashboard reading `SOL, DOGE · Day Trader · Social + Fun`.
+- Against the live API: an unsupported symbol is rejected with 400 and never
+  reaches the database; lowercase input is stored uppercased;
+  `onboardingCompleted` flips to true; the edit screen pre-fills; a hard refresh
+  on `/dashboard` no longer bounces to onboarding.
+- 44 tests, including one asserting each of the four content preferences produces
+  an observable difference, one that all four sections are always present across
+  seven preference combinations, and one that the AI context contains no email,
+  password, token or user id.
+
+**A near miss during cleanup.** The cleanup step for test accounts was about to
+be run broadly against the users table. Listing the rows first showed a third
+account that was not a test fixture — a real signup made while verifying the
+deployment. Checking before deleting is the only reason it survived. Nothing
+should delete from a shared database without looking at what it is about to
+remove first.
