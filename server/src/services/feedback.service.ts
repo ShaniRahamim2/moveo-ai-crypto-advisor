@@ -1,4 +1,4 @@
-import type { SectionType, Vote } from '@prisma/client';
+import type { Prisma, SectionType, Vote } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import type { FeedbackInput } from '../validation/feedback.schema.js';
 
@@ -22,7 +22,7 @@ export interface StoredVote {
 export async function submitVote(
   userId: string,
   input: FeedbackInput,
-  context?: Record<string, unknown>,
+  context?: Prisma.InputJsonValue,
 ): Promise<StoredVote> {
   return prisma.feedback.upsert({
     where: {
