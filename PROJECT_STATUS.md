@@ -8,7 +8,7 @@ Last updated: end of Phase 0.
 
 ## P0 — the assignment
 
-- [ ] 1. Signup (name, email, password) + login with JWT; passwords hashed; protected routes
+- [x] 1. Signup (name, email, password) + login with JWT; passwords hashed; protected routes — verified against the live database and in a browser
 - [ ] 2. First-login onboarding: crypto assets, investor type, content preferences saved to DB
 - [ ] 3. Dashboard with all four sections: Market News, Coin Prices, AI Insight of the Day, Fun Crypto Meme
 - [ ] 4. Thumbs up/down on every section, persisted to DB, restored after refresh, changeable
@@ -51,7 +51,7 @@ Last updated: end of Phase 0.
 | 0. Env, repo, hygiene files | done | `gh` installed mid-phase; repo created public under ShaniRahamim2, `06ee35f` pushed |
 | 1. Design proposal | approved | |
 | 2. Scaffold + deploy skeleton + Neon + DB access | partial | Scaffold, migration, seed and read-only role done. Hosting services not yet created; CryptoPanic unreachable (see risks) |
-| 3. Auth | not started | |
+| 3. Auth | done | 15 tests passing; verified live and in a browser |
 | 4. Onboarding + preferences + personalization context | not started | |
 | 5. Market + News + Meme providers, Charts/Social prefs | not started | |
 | 6. AI Insight | not started | |

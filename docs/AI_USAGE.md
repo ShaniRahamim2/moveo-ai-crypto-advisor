@@ -187,3 +187,72 @@ placeholder rather than real UI. It exists to prove the deployed client can reac
 the deployed API across origins before any feature is built on top. Deploying
 early is deliberate — deployment problems surface at the worst possible time when
 they are left to the end.
+
+**My decision on news providers.** It reported CryptoPanic as unreachable and
+proposed shipping the static fallback, with live RSS offered only as an
+alternative I could take instead. I rejected that framing and required all three
+layered behind the one interface, in priority order: CryptoPanic first (it is the
+only source carrying the community signal the Social preference needs), RSS
+second, static last. A P0 section serving visibly sample data reads as
+unfinished even when the assignment permits it, and 30 minutes is a fair price
+for genuinely live news. The tier actually serving in production gets reported.
+
+---
+
+## Phase 3 — authentication
+
+**Worked on:** register/login/me endpoints, JWT issuing and verification, bcrypt
+hashing, auth middleware, validation, the sign-in and sign-up screens, protected
+routing, and the auth test suite.
+
+**Decisions I accepted:**
+
+- Identical error text for an unknown email and a wrong password, with a bcrypt
+  comparison against a dummy hash on the unknown-email path so response timing
+  does not reveal which addresses are registered. It raised this unprompted; the
+  spec only asked for a 401.
+- Registration returns a token and signs the user straight in, rather than
+  bouncing them to a login form they just filled in.
+- `getUserId(req)` as a single guarded accessor instead of a non-null assertion
+  at every controller that sits behind the auth middleware.
+
+**Decisions I corrected:**
+
+- It first wrote the onboarding placeholder with a "Skip for now" link to the
+  dashboard. The protected route sends un-onboarded users back to onboarding, so
+  that link was an infinite redirect. It caught this before committing and
+  removed the link rather than loosening the route guard — the right way round.
+
+**A lint failure worth recording.** `react-hooks/set-state-in-effect` rejected
+the auth provider for calling `setStatus('anonymous')` inside an effect when no
+token exists. The tempting fix is to disable the rule. Instead the initial state
+is now derived — `useState(() => getToken() ? 'loading' : 'anonymous')` — and the
+effect only runs when there is something to verify. The rule was right and the
+code is simpler for it. Our standing instruction is to fix the implementation
+rather than weaken the check, and this is a case where that paid off.
+
+**Verified by hand, against the live database rather than mocks:**
+
+- Register returned 201 with a token; a second attempt with the same address
+  returned 409; invalid input returned 400 naming all three offending fields.
+- Login with the correct password returned 200; the wrong password returned 401
+  with the same message an unknown address produces.
+- `/api/auth/me` returned 401 with no token and 401 with a malformed token, and
+  the correct user with a valid one.
+- I queried the row directly: the stored value is a 60-character `$2b$10$` bcrypt
+  hash, not the plaintext. The test account was deleted afterwards.
+- In a browser: signed in as the seeded demo account, confirmed the redirect to
+  the dashboard, confirmed the session survives a hard refresh, and confirmed
+  that clearing the token bounces a direct visit to `/dashboard` back to login.
+
+**A false alarm worth recording, because it nearly became a wrong bug report.**
+Driving the login form through browser automation appeared to show the form not
+submitting — no network request, no error. The app was fine. Setting an input's
+`value` programmatically does not fire the events React listens for, so the
+component's state never updated, and the synthetic click did not reach React's
+handler. Confirmed the app worked by dispatching a real `input` event and calling
+`form.requestSubmit()`, which logged in correctly. Worth noting because the
+instinct on seeing "form does not submit" is to start changing the form.
+
+**Accepted without close review:** the Tailwind utility classes on the auth
+screens, verified visually instead.
