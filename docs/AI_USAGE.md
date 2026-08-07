@@ -416,24 +416,44 @@ cache, the non-AI fallback, and the meme image pipeline.
 
 **Decisions I accepted:**
 
-- Prices are deliberately excluded from the cache key. Including them would
-  defeat the cache entirely, since they move every minute. The key is assets +
-  investor type + content preferences + date.
-- The fallback is never written to the cache, so a model failure does not occupy
-  the day's slot and block a real insight on the next refresh. I would have got
-  this wrong.
+- **Prices are deliberately excluded from the cache key.** The obvious key is
+  "everything the insight was based on", which would include the prices — and
+  that cache would be useless within a minute, because prices move constantly.
+  Every dashboard load would miss, and the free tier's ~50 requests a day would
+  be gone in an afternoon. The key is assets + investor type + content
+  preferences + date, so the insight is stable for the day and the section still
+  reads as current because the prices beside it are live. Non-obvious, and the
+  whole caching strategy depends on getting it right.
+- **The fallback is never written to the cache.** If a model timeout wrote its
+  degraded summary into the cache, that row would occupy the day's slot and every
+  later refresh would serve the non-AI text — the model would not be retried
+  until tomorrow. One transient failure would silently downgrade the section for
+  a full day. That is a production bug that would not surface for days, and it is
+  invisible in testing because everything still returns 200 with content. A test
+  now asserts `insightCache.create` is not called on the fallback path.
 - `reasoning: { enabled: false }` is sent explicitly, carried over from the
   Phase 2 finding that a reasoning model spends its whole token budget thinking
   and returns empty content.
 
-**Verified by hand, with real model calls:** two profiles produced visibly
-different insights from the same code path. The HODLer briefing opened on
-Bitcoin at $65,111 (+1.00%) and Ethereum at $1,922.33 (+1.30%) and framed them
-for a long-term holder; the day trader briefing led with SOL +1.40% and DOGE
-+1.80% and short-term attention. I checked every figure in both against the data
-actually supplied — no invented numbers, no advice, no filler opening. The daily
-cache was then exercised against the live database: first call 3856ms hitting
-the model, second call 76ms from cache, identical text, exactly one row written.
+**Verified by hand, with real model calls — and the verification method is the
+point.** Two profiles produced visibly different insights from the same code
+path. The HODLer briefing opened on Bitcoin at $65,111 (+1.00%) and Ethereum at
+$1,922.33 (+1.30%) and framed them for a long-term holder; the day trader
+briefing led with SOL +1.40% and DOGE +1.80% and short-term attention.
+
+I did not read those and judge them plausible. The test harness printed the
+exact data handed to the model next to the text it returned, and I checked every
+figure in both insights against that input, one at a time — each price, each
+percentage, each headline attribution. That is the only way to tell the
+difference between "the model wrote something that sounds right" and "the model
+is actually grounded in this user's data", and grounding is the entire premise
+of the section. A plausible-sounding insight containing one hallucinated number
+is worse than no insight at all, because a reader has no way to spot it. Nothing
+was invented, no advice appeared, and the banned filler opening did not occur.
+
+The daily cache was then exercised against the live database: first call 3856ms
+hitting the model, second call 76ms from cache, identical text, exactly one row
+written.
 
 **The meme images — a decision I reversed the model on.** It proposed, and
 initially shipped, self-contained text cards rather than images, arguing that
