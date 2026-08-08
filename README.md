@@ -199,7 +199,7 @@ endpoint.
 ## Tests
 
 ```bash
-npm test          # 142 tests
+npm test          # 170 tests
 npm run lint
 npm run build
 ```
@@ -215,6 +215,100 @@ the required auth, preference and feedback cases, plus:
 - The AI prompt contains no email, password, token or user id
 - Coin Prices never falls below second across all 15 preference combinations
 - Every meme in the manifest resolves to a file that exists on disk
+- The rate limiter admits traffic to its limit and rejects the next request
+- A `javascript:` link from a hostile feed never reaches the dashboard payload
+- Malformed JSON and an oversize body answer 400 and 413, not 500
+
+## Security
+
+A review was run against the deployed application before submission, scoped to
+what could plausibly be wrong in a project of this shape rather than as a general
+audit: secrets in git history and in the bundle, authorization on every
+authenticated endpoint, JWT handling, input validation, CORS, error responses,
+the reviewer database role, and dependencies.
+
+### Found and fixed
+
+**Login leaked whether an account existed, through response time.** The uniform
+"Incorrect email or password" was in place, and so was a bcrypt comparison
+against a dummy hash meant to equalise timing — but the dummy was a hand-written
+constant one character short of a valid bcrypt hash. bcrypt rejected it outright
+in well under a millisecond instead of doing the work. Measured against
+production, an unregistered address answered in ~0.12s and a registered one in
+~0.65s, which is trivially separable over a network. The hash is now generated at
+startup, and the two paths measure ~0.64s and ~0.60s — indistinguishable. A test
+asserts the constant is a hash bcrypt actually evaluates.
+
+**No rate limiting anywhere.** Login accepted unlimited password attempts, and
+every dashboard build can reach CoinGecko and OpenRouter, whose free tiers one
+client in a loop can exhaust for every user. Three limiters now: 10 per 15
+minutes on authentication, 30 per minute on the dashboard, 120 per minute across
+the API. Keyed on the caller's address, which required `trust proxy` — see below.
+
+**Client faults were reported as server faults.** Malformed JSON and an oversize
+body both returned 500. No information leaked, but a bad request blamed the
+server and made the logs misleading. They now return 400 and 413.
+
+**News links were rendered as `href` without scheme validation.** A hostile or
+compromised RSS feed could have supplied a `javascript:` URL, which would run in
+the app's origin where the token is. Links are now constrained to `http` and
+`https` at the point the tiers converge, so a future source cannot forget it.
+
+**The frontend sent no security headers.** The API was fully covered by helmet;
+Vercel was serving only HSTS. The SPA holds the token, so it is the side that
+most wants a CSP. It now sends CSP, `X-Content-Type-Options`, `X-Frame-Options`,
+`Referrer-Policy` and `Permissions-Policy`.
+
+**The JWT secret floor was 16 characters**, raised to 32. Production was already
+a 64-character value from `openssl rand -hex 32`; the schema now says so.
+
+**The database host was published in a public repository.** `DB_ACCESS.md` gave
+the exact Neon endpoint and role name. Redacted — the host now travels with the
+password in the submission email.
+
+### The trust-proxy trap, since it nearly shipped wrong
+
+Rate limiting keys on `req.ip`, which behind a proxy is only the real caller if
+Express is told how many hops to trust. `trust proxy: 1` looked right and was
+verified against production rather than assumed — it resolved to Render's
+internal `10.199.154.211`, meaning **every user in the world would have shared a
+single rate-limit bucket**. The real chain is three hops (Cloudflare's edge, then
+two inside Render). At `trust proxy: 3`, requests from two different networks
+resolved to two different addresses, and a deliberately forged
+`X-Forwarded-For` was ignored because a forged entry is prepended and counting
+from the right steps past it.
+
+### Verified clean
+
+`.env` was never committed; a scan of the full history for provider-key, database-URL,
+JWT and token shapes found nothing. The client bundle contains no secret and
+reads one variable, `VITE_API_URL`. No endpoint accepts a user identifier from
+the body, params or query — every user-scoped call derives it from the verified
+token, so there is nothing to manipulate. The JWT payload is `{iat, exp, sub}`
+with an opaque id: no email, no name, no role. Tampered, `alg:none` and missing
+tokens all give the same opaque 401. Every mutating route validates with Zod and
+unknown keys are stripped; Prisma throughout, with the only raw SQL a constant
+`SELECT 1`. CORS is exact-match — a foreign origin, a suffix lookalike, a preview
+URL, `localhost` and `null` all get no `Access-Control-Allow-Origin`, on
+preflight too. No stack trace or database error reaches a client. `npm audit`
+reports zero vulnerabilities in all three packages.
+
+### Accepted, with reasoning
+
+**The reviewer's read-only role can read `users.passwordHash`.** That is inherent
+to granting database access, not an oversight. The column holds bcrypt hashes at
+cost 10, and the demo passwords are used nowhere else. Narrowing it would mean a
+column-level grant that hides part of the schema from someone invited to inspect
+it.
+
+**The token is in `localStorage`**, so an XSS would expose it. This is the usual
+trade-off for a bearer-token SPA; the alternative is an httpOnly cookie, which
+brings CSRF handling and a cross-site cookie setup that the deployment
+constraints here do not justify. The CSP added above is the mitigation that fits.
+
+**No account lockout or MFA**, and no password-reset flow — reset needs a
+transactional email provider with domain verification, which is outside this
+assignment's free-tier constraint.
 
 ## Reviewer database access
 
@@ -239,7 +333,10 @@ exercised: reads succeed on all tables, and `INSERT`, `UPDATE`, `DELETE`,
 Stated in full, because a limitation found rather than disclosed makes the rest
 of the document less trustworthy.
 
-- **No frontend tests.** All 142 tests are server-side. The interface has been
+- **Authentication is rate limited to 10 attempts per 15 minutes per IP.** That
+  is deliberate, but reviewers behind a shared address should know it exists
+  before reading a 429 as a broken login.
+- **No frontend tests.** All 170 tests are server-side. The interface has been
   verified by hand, including at a 375px viewport, but nothing guards a React
   regression.
 - **CryptoPanic is unreachable**, so the Social preference is reduced to section

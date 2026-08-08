@@ -4,7 +4,8 @@ Legend: `[ ]` not started · `[x]` done and verified · `[~]` partially done · 
 
 Nothing is marked `[x]` until the behavior has been exercised and observed. Updated after every phase.
 
-Last updated: after the post-documentation UI batches. All code and docs pushed.
+Last updated: after the meme-sizing and news-restore fixes and the pre-submission
+security review. All code and docs pushed.
 
 All routes are real. Nothing in the app is a placeholder.
 
@@ -24,17 +25,18 @@ All routes are real. Nothing in the app is a placeholder.
 
 - [x] 10. Real, observable personalization along all three dimensions — visible on screen and verified in production
 - [x] 11. Provider abstractions with timeout + 429 + failure handling — including the isolation test: one provider fails, other three still `ok`
-- [x] 12. API tests including explicit 429 and timeout tests — 152 tests; the timeout test really aborts at 5001ms
+- [x] 12. API tests including explicit 429 and timeout tests — 160 tests; the timeout test really aborts at 5002ms
 - [x] 13. Editable preferences after onboarding — `/preferences` reuses the onboarding form, pre-filled
 - [x] 14. Loading/skeleton, empty, and partial-error states; responsive layout — checked at a real 375px viewport, not a resized desktop
 - [x] 15. Seeded demo account so the reviewer can log in without signing up
 
 ## P2 — only with spare time
 
-None of these were started. None are required, and none are blocking submission.
+Two unplanned extras were built; the three numbered P2 items were not started.
+None are required, and none are blocking submission.
 
-- [x] 10. Coin Prices refresh control with a 90s cooldown matched to the cache TTL
-- [x] 9. Time-aware greeting, computed client-side
+- [x] Coin Prices refresh control with a 90s cooldown matched to the cache TTL
+- [x] Time-aware greeting, computed client-side
 
 - [ ] 16. Claude Code post-edit lint hook
 - [ ] 17. Health-check keep-alive to mitigate cold starts — would reduce the
@@ -63,7 +65,7 @@ request, and the sparkline is hand-rolled inline SVG with no charting library.
 - The meme illustrations are original flat-vector drawings. They are deliberate
   and consistent, but they are not the same thing as recognisable meme formats —
   the two supplied images carry that weight.
-- No frontend tests exist. All 114 tests are server-side. The client has been
+- No frontend tests exist. All 160 tests are server-side. The client has been
   verified by hand in a browser, including at a phone viewport, but nothing
   guards a regression in the React components.
 
@@ -113,6 +115,34 @@ request, and the sparkline is hand-rolled inline SVG with no charting library.
   Verified: 12 consecutive production loads all `ok`, and the first load on a
   genuinely cold process (uptime 5s after 18 minutes idle) returned live prices.
 
+## Security review
+
+Requested before the final documentation pass, scoped to secrets, authorization,
+JWT handling, input validation, CORS, error responses, the reviewer database role
+and dependencies. Findings and reasoning are in the README's Security section.
+
+- [x] Login timing leaked account existence (0.12s vs 0.65s in production) — the
+      dummy bcrypt hash was one character short of valid, so it was never
+      evaluated. Fixed and re-measured: ~0.64s vs ~0.60s
+- [x] No rate limiting — three limiters added, verified live (11th auth attempt
+      returns 429)
+- [x] `trust proxy` verified against production rather than assumed. At 1 hop
+      `req.ip` resolved to Render's internal 10.x address, which would have keyed
+      every user into one bucket. Three hops resolves distinct clients and
+      ignores a forged `X-Forwarded-For`
+- [x] Malformed JSON and oversize bodies returned 500 — now 400 and 413
+- [x] News links unconstrained by scheme — now http/https only, filtered where
+      the tiers converge
+- [x] Frontend served no security headers — CSP and four others now sent from
+      Vercel, verified live and confirmed not to break coin logos or memes
+- [x] JWT secret floor raised from 16 to 32 characters
+- [x] Database host redacted from `docs/DB_ACCESS.md`
+- [x] Accepted with reasoning: read-only role can read `passwordHash`; token in
+      `localStorage`; no lockout, MFA or password reset
+- [x] Verified clean: no secrets in history or bundle, no endpoint takes a user
+      id from the request, CORS exact-match, `npm audit` zero across all three
+      packages
+
 ## Known issues
 
 - A vote on the Fun Crypto Meme section does not appear after a refresh. This is
@@ -128,7 +158,9 @@ request, and the sparkline is hand-rolled inline SVG with no charting library.
 
 ## Outstanding before submission
 
-1. **Screenshots** — developer to supply; see `docs/screenshots/`.
+1. **Screenshots** — `dashboard.png` and `onboarding.png` supplied;
+   `preferences.png` and `degraded.png` still outstanding. See
+   `docs/screenshots/`.
 2. **Phase 10: final QA on production** — full end-to-end pass on the live URL,
    the two-profile personalization comparison, a git-history secret scan, and a
    check that the read-only database role still works.
@@ -205,5 +237,6 @@ comparison, and a git history secret scan before submission.
 | 6. AI Insight                                          | done        | 84 tests; daily cache verified live (3856ms -> 76ms, one row)                            |
 | 7. Feedback                                            | done        | 100 tests; upsert verified against the live database (one row after a changed vote)      |
 | 8. Dashboard integration + polish                      | done        | 114 tests; deployed and verified in production at a phone viewport                       |
-| 9. Documentation                                       | not started |                                                                                          |
+| 9. Documentation                                       | done        | README, assignment overview, feedback-model design, decisions log; screenshots outstanding |
 | 10. Final QA on production                             | not started |                                                                                          |
+| Security review (developer-requested, pre-submission)  | done        | 8 findings; 7 fixed and 1 accepted with reasoning; all fixes verified in production       |

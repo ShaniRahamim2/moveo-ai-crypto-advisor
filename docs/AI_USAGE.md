@@ -837,3 +837,106 @@ cannot render `.avif`, so it could not describe that one image and said so
 instead of inventing a description from the filename. Browsers display `.avif`
 without difficulty, so the application is unaffected — only the alt text for that
 single file needs a human.
+
+---
+
+## A mitigation that was present in the code and absent in practice
+
+I asked for a security review before the final documentation pass, and I scoped
+it deliberately narrowly: secrets, authorization, JWT handling, input validation,
+CORS, error responses, the reviewer database role, dependencies. Not a general
+audit.
+
+The reasoning is that a broad audit of a 48-hour take-home produces a long list
+of things that are true of every small application — no MFA, no account lockout,
+no WAF, no secret rotation — and none of it is a finding, because none of it was
+ever in scope. That list reads like diligence and contains no information. A
+narrow scope aimed at what could actually be wrong *here* is the version that can
+return something worth acting on. It did.
+
+**The finding that justified the whole exercise was a mitigation that existed in
+the code and did not exist in reality.** Login answered the same "Incorrect email
+or password" whether or not the address was registered, and behind it compared
+the supplied password against a dummy bcrypt hash so that response time would not
+give the answer away. The comment said so. The dummy hash was a hand-written
+literal — and it was one character short of a valid bcrypt hash, so bcrypt
+rejected it outright in under a millisecond rather than doing the ~137ms of work
+a real comparison costs.
+
+The model's own summary of why this ranks above the other findings is worth
+keeping verbatim, because it is the right way to think about it:
+
+> It's worse than having no mitigation because the code comment asserts the
+> protection is there.
+
+What made it credible was that it was **measured against the deployed
+application, not reasoned about**. Five samples each: an unregistered address
+answered in 0.118, 0.119, 0.304, 0.124, 0.135 seconds; a registered one in 0.797,
+0.597, 0.589, 0.728, 0.627. Nothing about reading the code produces that table,
+and a reviewer can re-run it. After the fix the two paths measure ~0.64s and
+~0.60s, overlapping. I asked for that line to be recorded here as written.
+
+### Which findings I fixed, and which I accepted
+
+I took all of them, including the one the model hedged on.
+
+It flagged rate limiting as the highest-severity item and then recommended
+weighing it, because it adds a dependency and needs `trust proxy` configured
+correctly — get that wrong and every user is throttled as a single client. That
+is a fair reservation and I overruled it. Shipping a login with unlimited
+password attempts is not a thing I want a reviewer to find, and the limiter also
+protects the CoinGecko and OpenRouter quotas, which had already caused a
+production incident that same day.
+
+What I asked for instead of caution was verification: set `trust proxy`, then
+**prove against production that `req.ip` resolves distinct client addresses
+rather than Render's proxy**, and if that could not be confirmed, stop and say so
+— I would rather ship without rate limiting than ship a limiter that throttles
+everyone together. I also asked for it early enough to leave room to back it out.
+
+That instruction paid for itself immediately. `trust proxy: 1` is the value
+almost every guide gives, it looked right, and against the deployed service it
+resolved to `10.199.154.211` — Render's own internal address. Every user in the
+world would have shared one bucket. The real chain is three hops, Cloudflare's
+edge plus two inside Render. At `trust proxy: 3` a request from this machine and
+a request routed through a different network resolved to two different addresses,
+a deliberately forged `X-Forwarded-For` was correctly ignored, and the hop count
+held at three across repeated requests. Then the limiter was confirmed live: ten
+attempts admitted, the eleventh answered 429.
+
+None of that would have been discovered by reading the code, and the plausible
+version of this session is the one where the setting is copied from a blog post
+and the limiter silently makes the application worse.
+
+**Accepted rather than fixed**, and written into the README with the reasoning:
+the reviewer's read-only role can read `users.passwordHash`, which is inherent to
+giving someone database access; the token lives in `localStorage`, which is the
+standard bearer-token trade-off and the reason the CSP was worth adding; and
+there is no account lockout, MFA or password reset.
+
+## Two smaller lessons from the same session
+
+**A stale dev server will contradict the repository, confidently.** Checking the
+meme sizing fix in a browser showed twelve images failing to load — the original
+SVG illustrations, deleted commits earlier. The repository was correct and the
+running server was serving an old build, which meant the first evidence about the
+fix was evidence about something that no longer existed. Restarting it resolved
+everything. Worth remembering before debugging a discrepancy between what the
+code says and what the screen shows.
+
+**The same one-directional blind spot as the un-hide bug, caught this time.** The
+change that appends restored articles to the bottom of the list needed to know
+when a fresh fetch had arrived, so that ordering resets. The first implementation
+detected this by comparing the items array by reference — and it silently never
+fired, because React Query's structural sharing returns the *identical* array
+when a refetch produces the same headlines. The restore case worked; the refresh
+case did not.
+
+It was only caught because the refresh case was checked at all. The reported
+problem was the restore, the restore demonstrably worked, and stopping there
+would have been the natural place to stop. This is the same shape as the un-hide
+bug recorded above — fixing the direction that was reported and not its
+counterpart — and the difference is that this time the counterpart was tested
+before the work was called done, not after a user found it. The fix keys on
+`generatedAt`, which changes on every fetch and which the prices-only refresh
+deliberately preserves.
