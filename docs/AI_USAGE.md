@@ -694,3 +694,36 @@ rewritten degradation path dropped the timeout-specific message, so a timeout
 reported "prices could not be loaded" instead of "CoinGecko did not respond in
 time". The test that caught it was one I had written for the original timeout
 behaviour. Fixed the code rather than the expectation.
+
+---
+
+## A second incident found by using the app, not by testing it
+
+While exercising the meme and article hiding, sign-in suddenly returned 500. The
+server log showed `Can't reach database server` — Neon's free tier suspends the
+compute after inactivity, and the first connection to a suspended instance can
+fail outright rather than wait for it to wake. A retry seconds later succeeded.
+
+This matters more than it first appears. **Signing in is the reviewer's first
+action.** A cold Render instance waking a suspended Neon instance is exactly the
+sequence a reviewer triggers, and the failure mode is an opaque "An unexpected
+error occurred" on the login screen — worse than the empty prices card, because
+it stops them at the door rather than degrading one section.
+
+Fixed by opening the database connection at boot with retries and backoff, so
+the wake-up happens during Render's own cold start instead of landing on a user
+request. The server still starts if the warm-up fails, because `/api/health`
+reports database state separately and a later request may well succeed.
+
+**The lesson is the same one the prices failure taught, which is why it is worth
+recording twice.** No test caught this. No test could have: the suite mocks
+Prisma entirely, and mocking is what makes the 429 and timeout tests possible in
+the first place. Both incidents were found by opening the deployed application
+and using it as a person would — once by the developer noticing an empty card,
+once by the model hitting a 500 mid-verification.
+
+A test suite proves the code does what it was written to do. It says nothing
+about whether the platform underneath behaves as assumed. Two of the three worst
+problems in this build came from that gap: shared-IP rate limiting on one
+provider, and cold-start behaviour on the database. Neither is a coding mistake,
+and neither would have been found by writing more tests.
