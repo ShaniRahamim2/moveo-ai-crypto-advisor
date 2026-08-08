@@ -18,6 +18,13 @@ export function useFeedback() {
   });
 }
 
+/**
+ * Un-hiding is the inverse of a dismissal and needs the same optimistic
+ * treatment. Hiding was made instant by filtering on the feedback cache;
+ * restoring has to clear that cache *and* refetch the dashboard, because the
+ * server also filters hidden items out of the payload — so the restored items
+ * are simply not present until a fresh fetch brings them back.
+ */
 export function useResetHidden() {
   const queryClient = useQueryClient();
 
@@ -27,9 +34,31 @@ export function useResetHidden() {
         method: 'POST',
         body: JSON.stringify({ sectionType }),
       }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['feedback'] });
-      void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+
+    onMutate: async (sectionType) => {
+      await queryClient.cancelQueries({ queryKey: ['feedback'] });
+      const previous = queryClient.getQueryData<{ feedback: StoredVote[] }>(['feedback']);
+
+      const prefix = sectionType === 'MEME' ? 'meme:' : 'article:';
+      queryClient.setQueryData<{ feedback: StoredVote[] }>(['feedback'], (current) => ({
+        feedback: (current?.feedback ?? []).filter(
+          (v) =>
+            !(v.sectionType === sectionType && v.vote === 'DOWN' && v.contentRef.startsWith(prefix)),
+        ),
+      }));
+
+      return { previous };
+    },
+
+    onError: (_err, _input, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['feedback'], context.previous);
+      }
+    },
+
+    onSettled: async () => {
+      await queryClient.refetchQueries({ queryKey: ['dashboard'] });
+      await queryClient.invalidateQueries({ queryKey: ['feedback'] });
     },
   });
 }

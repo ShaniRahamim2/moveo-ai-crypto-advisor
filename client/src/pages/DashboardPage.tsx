@@ -182,6 +182,9 @@ export function DashboardPage() {
                       compactVote: true,
                       upTooltip: 'Like this meme',
                       downTooltip: 'Not my kind of meme — hide it',
+                      // The confirmation belongs to the meme being hidden, so it
+                      // shows while that meme is still on screen.
+                      downHoldMs: 1100,
                       onVoted: (vote: 'UP' | 'DOWN') => {
                         if (vote === 'DOWN' && visibleMemes.length > 1) {
                           const at = visibleMemes.findIndex((m) => m.id === currentMeme?.id);

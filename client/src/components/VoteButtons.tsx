@@ -17,7 +17,7 @@ const ACKNOWLEDGEMENT: Record<SectionType, { UP: string; DOWN: string }> = {
   },
   MEME: {
     UP: 'Thanks — more like this one.',
-    DOWN: 'Hidden. You will not see this meme again.',
+    DOWN: 'Hidden. You won’t see this one again.',
   },
 };
 
@@ -37,6 +37,11 @@ interface VoteButtonsProps {
   /** Overrides the tooltip and accessible name where "useful" is the wrong word. */
   upTooltip?: string;
   downTooltip?: string;
+  /**
+   * Holds the down-vote for this long before submitting it, so an acknowledgment
+   * about an item can be seen while that item is still on screen.
+   */
+  downHoldMs?: number;
   onVoted?: (vote: 'UP' | 'DOWN') => void;
 }
 
@@ -48,6 +53,7 @@ export function VoteButtons({
   compact = false,
   upTooltip,
   downTooltip,
+  downHoldMs = 0,
   onVoted,
 }: VoteButtonsProps) {
   const upText = upTooltip ?? `Useful — ${label}`;
@@ -67,9 +73,21 @@ export function VoteButtons({
   }, [acknowledged]);
 
   function vote(next: 'UP' | 'DOWN') {
-    submitVote.mutate({ sectionType, contentRef, vote: next });
     setAcknowledged(next);
     setReopened(false);
+
+    // Without the hold, a hide removes its subject instantly and the
+    // confirmation is left sitting over whatever replaced it.
+    if (next === 'DOWN' && downHoldMs > 0) {
+      setTimeout(() => {
+        submitVote.mutate({ sectionType, contentRef, vote: next });
+        onVoted?.(next);
+        setAcknowledged(null);
+      }, downHoldMs);
+      return;
+    }
+
+    submitVote.mutate({ sectionType, contentRef, vote: next });
     onVoted?.(next);
   }
 

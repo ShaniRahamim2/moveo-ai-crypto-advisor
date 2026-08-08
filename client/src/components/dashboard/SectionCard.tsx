@@ -14,6 +14,7 @@ interface SectionCardProps {
   compactVote?: boolean;
   upTooltip?: string;
   downTooltip?: string;
+  downHoldMs?: number;
   /** Market News votes per article instead, so its section control is hidden. */
   hideVote?: boolean;
   actions?: ReactNode;
@@ -28,6 +29,7 @@ export function SectionCard({
   compactVote = false,
   upTooltip,
   downTooltip,
+  downHoldMs,
   hideVote = false,
   actions,
   onVoted,
@@ -90,6 +92,7 @@ export function SectionCard({
               compact={compactVote}
               {...(upTooltip ? { upTooltip } : {})}
               {...(downTooltip ? { downTooltip } : {})}
+              {...(downHoldMs ? { downHoldMs } : {})}
               {...(downLabel ? { downLabel } : {})}
               {...(onVoted ? { onVoted } : {})}
             />

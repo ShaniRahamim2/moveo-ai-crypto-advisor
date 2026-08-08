@@ -762,3 +762,44 @@ The general lesson is narrower than "test more" and worth stating precisely: a
 check that performs a state-resetting action between the interaction and the
 assertion can only observe persisted state. If the thing under test is the
 interface's immediate response, the reload has to come out of the test.
+
+---
+
+## Fixing one direction of a reversible action and calling it done
+
+The dismissal bug — an article persisting but not leaving the screen until a
+reload — was fixed by filtering the rendered lists from the optimistically
+updated feedback cache. That fix was correct, verified without a reload, and
+incomplete.
+
+**"Show hidden articles again" had exactly the same bug, in reverse.** Clicking
+it restored nothing until a refresh. Hiding was made instant; un-hiding was not
+touched. The same was true of "Show hidden memes again".
+
+The verification is the interesting part. Both directions had been checked, and
+both checks passed, because **each one only exercised the direction that had been
+fixed**. The hide test clicked hide and asserted the item vanished. The restore
+test clicked restore and then reloaded — reintroducing precisely the reload that
+the original bug had hidden behind. The earlier lesson, that a reload between
+interaction and assertion can only observe persisted state, had been learned for
+one control and not carried across to its inverse.
+
+There is also a second cause worth recording, because it is not obvious: the
+server filters hidden items out of the dashboard payload. So restoring cannot be
+purely optimistic — the restored items are not merely filtered out on the client,
+they are absent from the data. The fix clears the feedback cache optimistically
+*and* refetches the dashboard, where the hide fix needed only the former. The two
+directions of one reversible action genuinely required different mechanisms,
+which is probably why the asymmetry survived.
+
+**The generalisable rule:** when a fix makes an action feel immediate, the
+inverse of that action needs the same treatment and the same test, and the test
+for the inverse must not contain the escape hatch that hid the original bug.
+
+Separately, in the same round: the meme hide dropped its subject instantly while
+the confirmation stayed on screen for several seconds afterwards, hovering over a
+meme the user had never rated. The acknowledgment outlived the thing it referred
+to. Fixed by holding the mutation briefly so the confirmation is visible while
+its own meme is still shown, then rotating and resetting the controls together —
+verified by polling the DOM, which showed the rotation, the colour clearing and
+the message clearing all happening on the same frame.
