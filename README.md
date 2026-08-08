@@ -27,8 +27,12 @@ dashboard.
 
 ## Screenshots
 
-See [`docs/screenshots/`](docs/screenshots/). The live app above is the better
-look — it takes one click with the demo login and shows real market data.
+| Dashboard | Onboarding |
+|---|---|
+| [![Dashboard — all four sections, signed in as the demo account](docs/screenshots/dashboard.png)](docs/screenshots/dashboard.png) | [![Onboarding — the three questions and the searchable asset picker](docs/screenshots/onboarding.png)](docs/screenshots/onboarding.png) |
+
+The live app above is the better look — it takes one click with the demo login
+and shows real market data.
 
 ## Features
 
@@ -333,6 +337,17 @@ exercised: reads succeed on all tables, and `INSERT`, `UPDATE`, `DELETE`,
 Stated in full, because a limitation found rather than disclosed makes the rest
 of the document less trustworthy.
 
+- **Restoring hidden articles can flicker once.** The restored articles are
+  appended to the bottom of the list and the articles already on screen do not
+  move — measured, they hold position to the pixel. But in roughly a third of
+  rapid dismiss-and-restore cycles the list briefly returns to its pre-restore
+  length before settling, which moves the sections *below* it by about 250px and
+  back within ~250ms. The cause is a `GET /api/feedback` still in flight when
+  restore is pressed: it resolves afterwards and writes the pre-reset votes back
+  over the optimistic clear, until the reset's own refetch corrects it. Two
+  targeted fixes were tried and measured, neither removed it, and the mechanism
+  that keeps a stale response in flight is not fully identified. It is documented
+  rather than patched speculatively this close to submission.
 - **Authentication is rate limited to 10 attempts per 15 minutes per IP.** That
   is deliberate, but reviewers behind a shared address should know it exists
   before reading a 429 as a broken login.

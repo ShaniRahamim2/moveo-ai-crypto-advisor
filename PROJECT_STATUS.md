@@ -145,6 +145,14 @@ and dependencies. Findings and reasoning are in the README's Security section.
 
 ## Known issues
 
+- **Restoring hidden articles flickers in roughly one cycle in three.** Ordering
+  is correct and the articles on screen hold position to the pixel; the list
+  briefly returns to its pre-restore length, which moves the sections below it
+  ~250px and back within ~250ms. Diagnosed to a `GET /api/feedback` in flight at
+  the moment of the restore. Two fixes were tried, measured and reverted because
+  neither changed the behaviour. Documented rather than patched — see
+  `docs/DECISIONS.md`.
+
 - A vote on the Fun Crypto Meme section does not appear after a refresh. This is
   correct rather than broken: votes are attached to the specific content voted
   on, and the meme is required to change on every refresh, so the new meme has no

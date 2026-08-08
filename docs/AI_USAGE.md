@@ -940,3 +940,73 @@ counterpart — and the difference is that this time the counterpart was tested
 before the work was called done, not after a user found it. The fix keys on
 `generatedAt`, which changes on every fetch and which the prices-only refresh
 deliberately preserves.
+
+### A process note, kept because tidying it away would be the wrong instinct
+
+While staging the probe that measured the proxy depth, `git add -A server/src`
+swept in four unrelated fixes that were sitting uncommitted — the bcrypt hash,
+the error handler, the news link guard and the JWT floor. The commit message
+described only the probe. The mistake was mine to catch and I caught it after
+pushing, which left one commit whose message understates what it contains.
+
+I chose not to correct it. Rewriting pushed history on the submission repository
+the night before means a force-push whose failure mode surfaces the next morning,
+and the following commit describes the full set of fixes, so the history is
+incomplete rather than misleading. The honest note is worth more here than a
+tidy graph would have been — and the general lesson is that `git add -A` after a
+long working session stages whatever else happened to be in flight.
+
+## Diagnosing a bug and then not fixing it
+
+The article restore still jolted occasionally after the append fix. My
+instruction was to diagnose rather than assume — the previous time I had guessed
+a race and been wrong, and the real cause had been a `Set` that never released —
+and, explicitly, that if it could not be reproduced or a fix could not be
+verified, I wanted it documented as a rough edge rather than patched
+speculatively the night before submission.
+
+Both halves of that instruction ended up mattering.
+
+**The reproduction changed what the bug was.** Automating dismiss-and-restore
+cycles and sampling the DOM showed the articles already on screen holding their
+positions *to the pixel* — the thing that had been reported as moving was not
+moving. The row count was oscillating `4 → 6 → 4 → 6` over ~250ms, and because
+the news card grows and shrinks with its contents, the sections **below** it
+travelled about 250px down, up and down again. The jolt was real and in a
+different place than it looked.
+
+**Three measurement mistakes were made and caught before they became
+conclusions**, which is the part worth recording:
+
+1. `requestAnimationFrame` is paused while the pane is hidden, so the first
+   harness measured nothing at all and reported clean runs.
+2. The watch window closed before the restored rows arrived, scoring a restore
+   that had not happened yet as "no movement".
+3. A runner loop from an earlier attempt was still alive and clicking the same
+   controls, which produced a spurious 142px reorder. Any conclusion drawn from
+   that run would have been an artefact of the instrument.
+
+The third is the one to remember: an earlier attempt at measurement was actively
+corrupting the next one, and the reordering it produced looked exactly like a
+plausible bug.
+
+**A probe that conflated two states nearly sent the diagnosis the wrong way.**
+Reading the restore button as "present or absent" scored `"Restoring…"` — a
+pending state — as an empty hidden set, which made the evidence say the feedback
+cache was fine when it was not. Capturing the button's text verbatim inverted the
+conclusion and produced the actual mechanism: a `GET /api/feedback` in flight
+when restore is pressed resolves afterwards and writes the pre-reset votes back
+over the optimistic clear.
+
+**Then two fixes failed and I stopped.** Suppressing the refetch after each vote
+cut the pre-reset feedback requests from four to one and did not change the
+flicker at all. Adding a `staleTime` to the feedback query did not change it
+either. Both were measured with the same instrument that had found the bug, and
+both were reverted.
+
+That is the outcome the instruction was written for. The mechanism is understood
+well enough to describe precisely and not well enough to fix confidently, and a
+third attempt would have been guessing against a deadline in the caching layer
+that has already produced two subtle regressions in this project. It is written
+up in `DECISIONS.md` with the measurements, and in the README's known
+limitations, rather than patched.

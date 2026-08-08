@@ -193,3 +193,39 @@ point of a section called Fun.
 caption above or below the image duplicates it. `altText` is retained and written
 per image from what the picture actually shows, since screen-reader users get
 that instead of the image.
+
+**The article-restore flicker was diagnosed and deliberately not fixed.** The
+reported symptom was the list jolting when articles come back. Appending
+restored articles to the bottom fixed the ordering half: measured across cycles,
+the articles already on screen hold their position **to the pixel**.
+
+What remains is different from what it looks like. In roughly one in three rapid
+dismiss-and-restore cycles the row count goes `4 → 6 → 4 → 6` over about 250ms.
+The rows on screen still never move — but the news card grows and shrinks with
+them, so everything **below** it travels ~250px down, back up, and down again.
+The jolt is real and it is not where it appears to be.
+
+The mechanism was pinned down by capturing the restore button's verbatim text
+alongside the row count:
+
+```
+t=3    n=4  "Show hidden articles again (2)"   figY=1475
+t=13   n=4  "Restoring…"                       figY=1475
+t=37   n=6  ABSENT                             figY=1727   optimistic clear
+t=115  n=4  "Restoring…"                       figY=1475   hidden set is BACK
+t=245  n=6  ABSENT                             figY=1727   reset's refetch wins
+```
+
+`"Restoring…"` renders only when the hidden set is non-empty *and* the mutation
+is still pending, so at t=115 the optimistic clear had genuinely been overwritten
+and then re-applied. A `GET /api/feedback` in flight when restore is pressed
+resolves afterwards and writes the pre-reset votes back.
+
+Two fixes were tried and measured with the same instrument. Marking the vote
+invalidation `refetchType: 'none'` cut the pre-reset feedback requests from four
+to one and **did not** change the flicker. Adding a `staleTime` to the feedback
+query, on the theory that remounting article components refetch a stale query,
+also did not change it. Both were reverted. Something still keeps a feedback
+response in flight and the model is incomplete, so the honest position is a
+documented rough edge rather than a third speculative patch the night before
+submission.
