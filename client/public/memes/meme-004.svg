@@ -1,14 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" width="600" height="400" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 330" width="600" height="330" role="img">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#151b28"/>
       <stop offset="1" stop-color="#0d1119"/>
     </linearGradient>
   </defs>
-  <rect width="600" height="400" rx="18" fill="url(#bg)"/>
-  <rect x="1" y="1" width="598" height="398" rx="17" fill="none" stroke="#26314a" stroke-width="2"/>
+  <rect width="600" height="330" rx="18" fill="url(#bg)"/>
+  <rect x="1" y="1" width="598" height="328" rx="17" fill="none" stroke="#26314a" stroke-width="2"/>
   <g><g transform="translate(0 -31.0)"><path d="M300 118 l52 40 -52 74 -52 -74z" fill="#67e8f9" opacity="0.92"/><path d="M300 118 l52 40 -52 20 -52 -20z" fill="#a5f3fc"/><path d="M248 158 h104" stroke="#0e7490" stroke-width="2"/><path d="M196 250 q22 -14 34 -34 q10 16 26 8" stroke="#cbd5e1" stroke-width="9" fill="none" stroke-linecap="round"/><path d="M404 250 q-22 -14 -34 -34 q-10 16 -26 8" stroke="#cbd5e1" stroke-width="9" fill="none" stroke-linecap="round"/><path d="M170 258 L230 236 L280 246 L340 214 L420 186" stroke="#22c55e" stroke-width="3" fill="none" opacity="0.55"/></g></g>
-  <text x="300.0" y="312" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="31" font-weight="700" fill="#f1f5f9">HODL</text>
-  <text x="300.0" y="348" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="19" fill="#93a2b8">Originally a typo. Now a personality.</text>
-  <rect x="248" y="368" width="104" height="4" rx="2" fill="#22c55e" opacity="0.85"/>
+  <rect x="248" y="300" width="104" height="4" rx="2" fill="#22c55e" opacity="0.85"/>
 </svg>
