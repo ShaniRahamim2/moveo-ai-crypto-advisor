@@ -49,18 +49,6 @@ export function MemeSection({ deck, visible, current, onSelect }: MemeSectionPro
   return (
     <div>
       <figure>
-        {/* A title, not a footnote. */}
-        {(current.caption || current.subcaption) && (
-          <figcaption className="mb-3">
-            {current.caption && (
-              <span className="block text-sm font-medium text-slate-200">{current.caption}</span>
-            )}
-            {current.subcaption && (
-              <span className="mt-0.5 block text-xs text-slate-500">{current.subcaption}</span>
-            )}
-          </figcaption>
-        )}
-
         {/*
           Every meme in the deck stays mounted and only the current one is
           visible. Swapping a single src blanks the card while the next image
@@ -70,7 +58,7 @@ export function MemeSection({ deck, visible, current, onSelect }: MemeSectionPro
           {visible.map((meme) => (
             <img
               key={meme.id}
-              src={meme.imageUrl}
+              src={encodeURI(meme.imageUrl)}
               alt={meme.id === current.id ? current.altText : ''}
               aria-hidden={meme.id === current.id ? undefined : true}
               className={

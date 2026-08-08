@@ -38,10 +38,9 @@ export interface NewsItem {
 
 export interface Meme {
   id: string;
-  /** Path under the frontend's own origin, e.g. /memes/meme-001.svg */
+  /** Path under the frontend's own origin. Encoded by the client when rendered. */
   imageUrl: string;
-  caption: string;
-  subcaption: string;
+  /** Every image carries its own text, so alt text is the only caption there is. */
   altText: string;
 }
 

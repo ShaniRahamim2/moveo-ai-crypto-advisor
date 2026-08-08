@@ -803,3 +803,37 @@ to. Fixed by holding the mutation briefly so the confirmation is visible while
 its own meme is still shown, then rotating and resetting the controls together —
 verified by polling the DOM, which showed the rotation, the colour clearing and
 the message clearing all happening on the same frame.
+
+
+---
+
+## A constraint shaping a solution, and the solution being dropped
+
+The meme section originally shipped twelve hand-built SVG illustrations. They
+existed for one reason: the model cannot source recognisable meme images —
+shipping copyrighted images in a public repository is not a risk worth taking —
+and it cannot write binary files into the repository at all, so it could not
+save images even when supplied in chat. Original vector artwork was the only
+thing it could produce unaided.
+
+That was a reasonable answer to a real constraint, and it was visibly a
+workaround: a section called "Fun" carrying flat-vector diagrams of candlesticks
+is not the same product as one carrying actual memes.
+
+Once the developer supplied fourteen real images the constraint no longer
+existed, and the workaround was deleted outright rather than kept alongside
+them. Keeping both would have meant a deck that alternated between real jokes
+and diagrams, which is worse than either on its own.
+
+Two details went with it. The UI caption was removed, because every real meme
+carries its text inside the image and a caption above it duplicated the joke
+word for word. And `altText` was rewritten per image from what each picture
+actually shows rather than from its filename — filenames like `images (1).jpeg`
+carry no information, and alt text is what a screen-reader user gets *instead of*
+the image.
+
+One limit remained honest rather than papered over: the model's file reader
+cannot render `.avif`, so it could not describe that one image and said so
+instead of inventing a description from the filename. Browsers display `.avif`
+without difficulty, so the application is unaffected — only the alt text for that
+single file needs a human.

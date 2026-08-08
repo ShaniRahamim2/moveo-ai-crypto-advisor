@@ -298,7 +298,7 @@ describe('StaticMemeProvider', () => {
     const result = await new StaticMemeProvider().getMeme();
 
     expect(result.status).toBe('ok');
-    expect(result.data.current.caption).toBeTruthy();
+    expect(result.data.current.imageUrl).toBeTruthy();
     expect(result.data.current.altText).toBeTruthy();
     expect(result.data.deck.length).toBeGreaterThanOrEqual(10);
     expect(result.data.deck.map((m) => m.id)).toContain(result.data.current.id);
@@ -317,7 +317,7 @@ describe('StaticMemeProvider', () => {
 
   it('still returns something when only one meme exists', async () => {
     const only = [
-      { id: 'solo', imageUrl: '/memes/solo.svg', caption: 'a', subcaption: 'b', altText: 'alt' },
+      { id: 'solo', imageUrl: '/memes/solo.png', altText: 'alt text' },
     ];
     const result = await new StaticMemeProvider(only).getMeme('solo');
 
@@ -397,9 +397,8 @@ describe('meme manifest', () => {
 
     expect(MEMES.length).toBeGreaterThanOrEqual(10);
     for (const meme of MEMES) {
-      expect(meme.imageUrl).toMatch(/^\/memes\/.+\.(svg|png|jpg|jpeg|gif|webp)$/i);
+      expect(meme.imageUrl).toMatch(/^\/memes\/.+\.(svg|png|jpg|jpeg|gif|webp|avif)$/i);
       expect(meme.altText.length).toBeGreaterThan(10);
-      expect(meme.caption).toBeTruthy();
     }
   });
 
@@ -589,5 +588,109 @@ describe('news summary truncation', () => {
     const summary = await summaryFor('&lt;p&gt;Bitcoin &lt;b&gt;rose&lt;/b&gt; today.&lt;/p&gt;');
     expect(summary).not.toMatch(/[<>]/);
     expect(summary).toContain('rose');
+  });
+});
+
+describe('news coverage across selected assets', () => {
+  function article(title: string, assets: string[], hoursAgo = 1) {
+    return {
+      title,
+      url: `https://example.com/${title.replace(/\s+/g, '-')}`,
+      source: 'Test',
+      publishedAt: new Date(Date.now() - hoursAgo * 3600_000).toISOString(),
+      assets,
+    };
+  }
+
+  function withArticles(items: ReturnType<typeof article>[]) {
+    return new LayeredNewsProvider(
+      { name: 'cryptopanic', configured: true, getNews: vi.fn().mockResolvedValue(items) } as never,
+    );
+  }
+
+  const fiveAssets = buildPersonalizationContext({
+    selectedAssets: ['BTC', 'ETH', 'SOL', 'XRP', 'DOGE'],
+    investorType: 'HODLER',
+    contentPreferences: ['MARKET_NEWS'],
+  });
+
+  // Crypto feeds skew hard to Bitcoin; without round-robin this returns six
+  // Bitcoin headlines and the personalization looks broken.
+  it('gives each selected asset a turn before any asset gets a second', async () => {
+    const items = [
+      ...Array.from({ length: 10 }, (_, i) => article(`BTC story ${i}`, ['BTC'], i)),
+      article('ETH story', ['ETH'], 2),
+      article('SOL story', ['SOL'], 3),
+      article('XRP story', ['XRP'], 4),
+      article('DOGE story', ['DOGE'], 5),
+    ];
+
+    const result = await withArticles(items).getNews(fiveAssets);
+    const covered = new Set(result.data.flatMap((i) => i.assets));
+
+    expect(covered).toEqual(new Set(['BTC', 'ETH', 'SOL', 'XRP', 'DOGE']));
+    expect(result.data.filter((i) => i.assets.includes('BTC'))).toHaveLength(2);
+  });
+
+  it('skips an asset with no genuine match rather than padding it', async () => {
+    const items = [
+      article('BTC one', ['BTC'], 1),
+      article('BTC two', ['BTC'], 2),
+      article('ETH one', ['ETH'], 3),
+    ];
+
+    const result = await withArticles(items).getNews(fiveAssets);
+    const covered = new Set(result.data.flatMap((i) => i.assets));
+
+    expect(covered).toEqual(new Set(['BTC', 'ETH']));
+    expect(result.data.every((i) => i.assets.length > 0)).toBe(true);
+  });
+
+  it('fills remaining slots with general news only after every asset is served', async () => {
+    const items = [
+      article('BTC one', ['BTC'], 1),
+      article('ETH one', ['ETH'], 2),
+      article('General crypto news', [], 3),
+    ];
+
+    const result = await withArticles(items).getNews(fiveAssets);
+
+    expect(result.data.slice(0, 2).flatMap((i) => i.assets).sort()).toEqual(['BTC', 'ETH']);
+    expect(result.data.map((i) => i.title)).toContain('General crypto news');
+  });
+
+  it('still respects the recency window and the item cap', async () => {
+    const items = [
+      ...Array.from({ length: 12 }, (_, i) => article(`fresh ${i}`, ['BTC'], 1)),
+      article('ancient', ['ETH'], 200),
+    ];
+
+    const result = await withArticles(items).getNews(fiveAssets);
+
+    expect(result.data.length).toBeLessThanOrEqual(6);
+    expect(result.data.map((i) => i.title)).not.toContain('ancient');
+  });
+});
+
+describe('feed entity decoding', () => {
+  it('decodes numeric and hex HTML entities in headlines', async () => {
+    const title = 'Bitcoin&#8217;s rally &amp; Ethereum&#x2019;s response';
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        text: () =>
+          Promise.resolve(
+            `<rss><channel><item><title>${title}</title><link>https://example.com/1</link><pubDate>${new Date().toUTCString()}</pubDate></item></channel></rss>`,
+          ),
+        json: () => Promise.resolve({}),
+      } as unknown as Response),
+    );
+
+    const items = await new RssNewsProvider([{ name: 'T', url: 'https://example.com/rss' }]).getNews();
+
+    expect(items[0]!.title).toBe('Bitcoin’s rally & Ethereum’s response');
+    expect(items[0]!.title).not.toMatch(/&#/);
   });
 });

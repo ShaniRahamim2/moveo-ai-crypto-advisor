@@ -34,7 +34,7 @@ export class StaticMemeProvider implements MemeProvider {
       return Promise.resolve({
         status: 'error',
         data: {
-          current: { id: 'none', imageUrl: '', caption: '', subcaption: '', altText: '' },
+          current: { id: 'none', imageUrl: '', altText: '' },
           deck: [],
           hiddenCount: 0,
           totalCount: 0,

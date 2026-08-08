@@ -57,6 +57,14 @@ All four sections always render. Coin Prices never falls below second place — 
 financial product that reaches prices last does not read as one — and a test
 asserts this across all 15 preference combinations.
 
+**News is selected for coverage, not volume.** Crypto RSS skews heavily to
+Bitcoin, so a straight relevance sort hands a user with five assets five Bitcoin
+headlines. Selection is round-robin instead: every selected asset gets one
+article before any asset gets a second. An asset with no genuine match is
+skipped rather than padded — partial coverage of real matches beats full
+coverage of forced ones. Four different coins across six headlines shows the
+feature working at a glance.
+
 ### The two demo accounts, side by side
 
 | | `demo@` (BTC/ETH · HODLer · News + Charts) | `daytrader@` (SOL/DOGE · Day Trader · Social + Fun) |
@@ -162,7 +170,7 @@ and not a constraint — one live reply came back at 174.
 | CoinGecko | Prices, logos, 7-day sparklines | Demo API key required in any deployed environment — keyless requests are rate limited per IP and that quota is *shared with every other caller on that IP*, which fails on shared hosting |
 | RSS feeds | Market news | No key, four sources |
 | OpenRouter | AI insight | Model `nvidia/nemotron-3-nano-30b-a3b:free`, verified with a live call and set via `OPENROUTER_MODEL` |
-| Self-hosted | Memes | 14 images in `client/public/memes/`, listed in `server/src/data/memes.json` |
+| Self-hosted | Memes | 14 images in `client/public/memes/`, listed in `server/src/data/memes.json`. Mixed formats (`.avif`, `.jpeg`, `.jpg`, `.png`, `.webp`) |
 
 ## Local setup
 
@@ -245,9 +253,6 @@ of the document less trustworthy.
 - **Market News has no section-level vote.** Every article has its own up/down
   pair, which would make a section-level control redundant. Voting on the other
   three sections is section-level.
-- **12 of the 14 memes are original illustrations**, not recognisable meme
-  formats, because shipping copyrighted images in a public repository is not
-  worth the exposure. Two were supplied by the author.
 - **Render's free tier sleeps** after 15 minutes idle; the first request can take
   up to a minute.
 - **The AI insight is cached for a full day** per personalization context. That

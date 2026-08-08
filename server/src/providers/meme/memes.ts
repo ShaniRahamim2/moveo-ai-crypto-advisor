@@ -16,8 +16,6 @@ import type { Meme } from '../types.js';
 const memeSchema = z.object({
   id: z.string().min(1),
   imageUrl: z.string().min(1),
-  caption: z.string().min(1),
-  subcaption: z.string(),
   altText: z.string().min(1),
 });
 

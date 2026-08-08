@@ -28,13 +28,7 @@ const news = [
   },
 ];
 
-const meme = {
-  id: 'meme-003',
-  imageUrl: '/memes/meme-003.svg',
-  caption: 'HODL',
-  subcaption: 'x',
-  altText: 'alt',
-};
+const meme = { id: 'meme-003', imageUrl: '/memes/meme-003.png', altText: 'alt text' };
 
 const memeDeck = { current: meme, deck: [meme], hiddenCount: 0, totalCount: 1, exhausted: false };
 

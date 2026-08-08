@@ -123,13 +123,20 @@ export class LayeredNewsProvider implements NewsProvider {
   }
 
   /**
-   * Deduplicate by URL, drop anything stale, prefer items mentioning the user's
-   * assets, and only then apply the social weighting when the tier supplied a
-   * signal. Sources without one are never given a fabricated score.
+   * Deduplicate by URL, drop anything stale, then pick for *coverage* rather
+   * than volume.
+   *
+   * Crypto RSS skews heavily to Bitcoin, so a straight relevance sort gives a
+   * user with five assets five Bitcoin headlines and reads as personalization
+   * only half working. Selection therefore goes round-robin: every selected
+   * asset gets one article before any asset gets a second.
+   *
+   * An asset with no genuine match is skipped, never padded. Partial coverage of
+   * real matches beats full coverage of forced ones, and stretching a tag to fit
+   * would be inventing relevance.
    */
   private rank(items: NewsItem[], context: PersonalizationContext): NewsItem[] {
     const cutoff = Date.now() - MAX_AGE_HOURS * 3600_000;
-    const selected = new Set(context.selectedAssets);
     const seen = new Set<string>();
 
     const fresh = items.filter((item) => {
@@ -138,24 +145,65 @@ export class LayeredNewsProvider implements NewsProvider {
       return new Date(item.publishedAt).getTime() >= cutoff;
     });
 
-    const scored = fresh.map((item) => {
-      const matches = item.assets.filter((a) => selected.has(a)).length;
-      let score = matches * 100;
+    const score = (item: NewsItem) => {
+      const social =
+        context.weightNewsBySocialSignal && typeof item.socialScore === 'number'
+          ? item.socialScore
+          : 0;
+      const recency = Math.max(
+        0,
+        48 - (Date.now() - new Date(item.publishedAt).getTime()) / 3600_000,
+      );
+      return social + recency;
+    };
 
-      if (context.weightNewsBySocialSignal && typeof item.socialScore === 'number') {
-        score += item.socialScore;
+    // One queue per selected asset, best first.
+    const queues = new Map<string, NewsItem[]>();
+    for (const asset of context.selectedAssets) {
+      const matches = fresh
+        .filter((item) => item.assets.includes(asset))
+        .sort((a, b) => score(b) - score(a));
+      if (matches.length > 0) queues.set(asset, matches);
+    }
+
+    const picked: NewsItem[] = [];
+    const takenUrls = new Set<string>();
+
+    // Round-robin: a second article for an asset only after every other asset
+    // with matches has had its first.
+    while (picked.length < MAX_ITEMS && queues.size > 0) {
+      let progressed = false;
+
+      for (const [asset, queue] of [...queues]) {
+        if (picked.length >= MAX_ITEMS) break;
+
+        const next = queue.find((item) => !takenUrls.has(item.url));
+        if (!next) {
+          queues.delete(asset);
+          continue;
+        }
+
+        picked.push(next);
+        takenUrls.add(next.url);
+        progressed = true;
       }
 
-      score += Math.max(0, 48 - (Date.now() - new Date(item.publishedAt).getTime()) / 3600_000);
-      return { item, score, matches };
-    });
+      if (!progressed) break;
+    }
 
-    const relevant = scored.filter((s) => s.matches > 0);
-    const pool = relevant.length >= 3 ? relevant : scored;
+    // Only once every selected asset has been served does general crypto news
+    // fill any remaining slots.
+    if (picked.length < MAX_ITEMS) {
+      const rest = fresh
+        .filter((item) => !takenUrls.has(item.url))
+        .sort((a, b) => score(b) - score(a));
 
-    return pool
-      .sort((a, b) => b.score - a.score)
-      .slice(0, MAX_ITEMS)
-      .map((s) => s.item);
+      for (const item of rest) {
+        if (picked.length >= MAX_ITEMS) break;
+        picked.push(item);
+      }
+    }
+
+    return picked;
   }
 }

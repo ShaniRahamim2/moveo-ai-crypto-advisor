@@ -128,3 +128,68 @@ inventing a score would be fabricating a signal.
 application but cannot write binary files into the repository, so it cannot
 produce screenshots or source meme images. The same limitation applies to any
 image asset. Expected files are listed in `docs/screenshots/`.
+
+---
+
+## Bugs worth remembering, and what caused them
+
+**The meme stopped rotating on refresh — an assignment requirement, regressed
+silently.** Removing a `setState`-in-effect to satisfy a lint rule replaced a
+fallback to the server's rotated choice (`deck.current`) with a fallback to
+`visibleMemes[0]` — the first entry of a stably ordered deck, identical on every
+fetch. Browsing state had quietly taken ownership of which meme displayed.
+
+Fixed by scoping browsing to the payload it happened in: a browsed choice records
+`{ generatedAt, memeId }`, and a refresh produces a new `generatedAt`, retiring it
+so the server's rotation wins. The two mechanisms no longer compete.
+
+The requirement had **no test**, which is why it regressed unnoticed. Three now
+guard it: consecutive fetches never repeat, the section reference matches the
+rotated meme, and rotation never lands on a hidden one.
+
+**"Show hidden articles again" appeared to do nothing, intermittently.** The
+suspected cause was a query race between invalidation and refetch. The real cause
+was simpler and only surfaced under repeated rapid clicking: the `dismissing` set
+used for the removal animation **only ever grew**. A restored article came back
+into the list rendering `opacity-0` with its control disabled. It worked whenever
+the restore happened in a fresh component instance, which produced the roughly
+one-in-ten success rate. The entry is now released once the item is hidden and
+filtered out anyway.
+
+The sequencing fix — refetch the hidden state to completion before the dashboard,
+because the server filters hidden items out of the payload — was kept. It is
+correct regardless, and the ordering genuinely matters.
+
+**One account's data could paint under another's session.** The query cache was
+not scoped to a user, so a previous account's dashboard rendered until the new
+fetch landed, sometimes as a partial coin list. `queryClient.clear()` on sign-in
+and sign-out makes this structural rather than timing-dependent: after clearing
+there is no cached dashboard, so the skeleton renders and there is nothing stale
+to paint.
+
+**The prices refresh patches its own section rather than refetching the
+dashboard.** The first fix refetched everything, which would have rotated the
+meme and re-run the daily insight on every press — surprising, and the opposite
+of why a prices-only endpoint exists. The response is now written into the cached
+dashboard for that section alone.
+
+**The section timestamp is our fetch time, not the upstream one.** Coin Prices
+previously showed CoinGecko's `last_updated` in a footer, which lags by minutes
+and never moves when we refetch, so the refresh button looked inert. The
+duplicate footer was removed; the header timestamp reflects our own fetch.
+
+---
+
+## Meme artwork
+
+**The original illustrations were a workaround, and were dropped when the
+constraint lifted.** Twelve hand-built SVG illustrations existed because the
+model cannot source copyrighted meme images and cannot write binary files into
+the repository. Once the developer supplied real images, the workaround had no
+reason to exist and was deleted entirely. Real memes are funnier, which is the
+point of a section called Fun.
+
+**No caption in the interface.** Every supplied image has its text baked in, so a
+caption above or below the image duplicates it. `altText` is retained and written
+per image from what the picture actually shows, since screen-reader users get
+that instead of the image.

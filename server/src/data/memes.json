@@ -1,100 +1,72 @@
 [
   {
-    "id": "meme-001",
-    "imageUrl": "/memes/meme-001.svg",
-    "caption": "Bought the dip",
-    "subcaption": "It kept dipping.",
-    "altText": "A price chart falling steeply with a small figure clinging to the last candle."
+    "id": "buy-high-sell-low",
+    "imageUrl": "/memes/buy high sell low meme crypto.jpg",
+    "altText": "A crude cartoon face with a candlestick chart drawn across its forehead. Green 'Buy' arrows point at the chart's peaks and red 'Sell' arrows point at its troughs, captioned 'So what have you learned so far?' with the answer being to buy high and sell low."
   },
   {
-    "id": "meme-002",
-    "imageUrl": "/memes/meme-002.svg",
-    "caption": "To the moon",
-    "subcaption": "Current altitude: basement.",
-    "altText": "A rocket buried nose-first in the ground with a small crater and the moon far above."
+    "id": "wen-moon-wen-lambo",
+    "imageUrl": "/memes/wen lambo meme.webp",
+    "altText": "A black-and-white photo of an astronaut planting a Bitcoin flag on the moon beside a lunar module, with a bright yellow Lamborghini parked on the moon's surface. Large text reads 'When moon? When lambo?'"
   },
   {
-    "id": "meme-003",
-    "imageUrl": "/memes/meme-003.svg",
-    "caption": "Checked the charts at 3am",
-    "subcaption": "Nothing had changed. Checked again at 3:04.",
-    "altText": "A person sitting up in bed at night lit by a phone screen, with a crescent moon in the window."
+    "id": "red-candles-green-candles",
+    "imageUrl": "/memes/crypto portfolio red candles meme.webp",
+    "altText": "The two-panel Drake format. In the top panel he turns away in disgust from three red candles; in the bottom panel he points approvingly at three green candles, playing on red and green candlesticks in trading charts."
   },
   {
-    "id": "meme-004",
-    "imageUrl": "/memes/meme-004.svg",
-    "caption": "HODL",
-    "subcaption": "Originally a typo. Now a personality.",
-    "altText": "Two hands holding a large diamond above a rising chart line."
+    "id": "checking-prices",
+    "imageUrl": "/memes/checking crypto.jpg",
+    "altText": "A man grimacing as he grips one arm with the other, straining to hold it back. Caption: 'Crypto investor trying to stop himself from checking crypto prices thousand times a day.'"
   },
   {
-    "id": "meme-005",
-    "imageUrl": "/memes/meme-005.svg",
-    "caption": "Gas fees: $84",
-    "subcaption": "Transaction value: $12.",
-    "altText": "A fuel pump with a very large price display next to a tiny coin."
+    "id": "dinner-with-candles",
+    "imageUrl": "/memes/dinner with candles .jpeg",
+    "altText": "A two-panel cartoon titled 'dinner with candles'. The top panel, marked with a red cross, shows a couple at a candlelit table. The bottom panel, marked with a green tick, shows a person happily eating alone in front of a laptop displaying green candlestick charts."
   },
   {
-    "id": "meme-006",
-    "imageUrl": "/memes/meme-006.svg",
-    "caption": "My portfolio is diversified",
-    "subcaption": "Down in seven different currencies.",
-    "altText": "Seven downward bars of different colours arranged like a portfolio breakdown."
+    "id": "taking-profits",
+    "imageUrl": "/memes/taking profits.webp",
+    "altText": "The Running Away Balloon format. A figure labelled 'Me' reaches for a balloon labelled 'Taking profits', then is held back by a pink figure labelled 'But it could 10x' as the balloon drifts away."
   },
   {
-    "id": "meme-007",
-    "imageUrl": "/memes/meme-007.svg",
-    "caption": "Seed phrase stored safely",
-    "subcaption": "Location: also lost.",
-    "altText": "A sheet of paper with blurred words inside a maze, with a question mark above it."
+    "id": "people-smile-at-phones",
+    "imageUrl": "/memes/people smile.jpg",
+    "altText": "A four-panel comic. A woman smiles at her phone on a train while captions wonder whether she has received happy news or a message from a loved one. The final panel reveals her screen showing a BTC/USD chart of rising green candles."
   },
   {
-    "id": "meme-008",
-    "imageUrl": "/memes/meme-008.svg",
-    "caption": "One green candle later",
-    "subcaption": "Suddenly an expert in monetary policy.",
-    "altText": "A small figure in a graduation cap standing beside one tall green candle among red ones."
+    "id": "invest-everything",
+    "imageUrl": "/memes/investcrypto.jpg",
+    "altText": "A photograph of a person in a full astronaut suit and gold-visored helmet slumped asleep on a bare mattress on the floor of an empty room, surrounded by litter. Text reads 'When you invest everything in crypto'."
   },
   {
-    "id": "meme-009",
-    "imageUrl": "/memes/meme-009.svg",
-    "caption": "Analysts call it consolidation",
-    "subcaption": "I call it a three-week nap.",
-    "altText": "A cat asleep on a completely flat price line."
-  },
-  {
-    "id": "meme-010",
-    "imageUrl": "/memes/meme-010.svg",
-    "caption": "Sold at a loss",
-    "subcaption": "It recovered ninety minutes later.",
-    "altText": "A chart that drops, is marked with a sell point, then rises sharply afterwards."
-  },
-  {
-    "id": "meme-011",
-    "imageUrl": "/memes/meme-011.svg",
-    "caption": "This time it is different",
-    "subcaption": "It is never different.",
-    "altText": "Three identical repeating chart cycles side by side."
-  },
-  {
-    "id": "meme-012",
-    "imageUrl": "/memes/meme-012.svg",
-    "caption": "Set a price alert",
-    "subcaption": "Still checking manually every four minutes.",
-    "altText": "A notification bell beside a phone being refreshed repeatedly."
-  },
-  {
-    "id": "hodl-expectation-reality",
-    "imageUrl": "/memes/hodl-expectation-reality.webp",
-    "caption": "How people think HODLing works",
-    "subcaption": "And how it actually goes.",
-    "altText": "A two-panel schematic drawing. The top panel, labelled how people think it is like to HODL, shows a cyclist on a completely flat road with a chequered finish flag ahead. The bottom panel, labelled what it is actually like, shows the same cyclist facing a long course of steep peaks, deep valleys, a water crossing, a tunnel and a rainstorm before reaching the flag."
+    "id": "traders-prayer",
+    "imageUrl": "/memes/1536372133701500928-png__700.jpg",
+    "altText": "A screenshot of a tweet captioned 'Prayer of every trader #Cryptocrash', showing a baby with hands clasped and eyes closed as if praying, with a thought bubble containing a rising green candlestick chart."
   },
   {
     "id": "doge-rocket",
     "imageUrl": "/memes/doge-rocket.png",
-    "caption": "Such rocket",
-    "subcaption": "Very launch. Much conviction.",
     "altText": "The Shiba Inu dog from the Doge meme, its head attached to the nose of a rocket firing its engines as it launches away from Earth, surrounded by floating Dogecoin coins against a starfield."
+  },
+  {
+    "id": "hodl-expectation-reality",
+    "imageUrl": "/memes/hodl-expectation-reality.webp",
+    "altText": "A two-panel schematic drawing. The top panel, labelled how people think it is like to HODL, shows a cyclist on a flat road with a chequered finish flag ahead. The bottom panel, labelled what it is actually like, shows the same cyclist facing steep peaks, deep valleys, a water crossing, a tunnel and a rainstorm before the flag."
+  },
+  {
+    "id": "green-candle-a-day",
+    "imageUrl": "/memes/images (1).jpeg",
+    "altText": "A smiling older man holding a mug beside a laptop showing a steeply rising green candlestick chart. Caption: 'A green candle a day keeps the doctor away.'"
+  },
+  {
+    "id": "bitcoin-eyes",
+    "imageUrl": "/memes/images (2).jpeg",
+    "altText": "The engraved portrait of Benjamin Franklin from a US hundred-dollar bill on a black background, with his eyes replaced by two orange Bitcoin logos."
+  },
+  {
+    "id": "crypto-meme-featuring",
+    "imageUrl": "/memes/crypto-meme-featuring (1).avif",
+    "altText": "A crypto meme illustration."
   }
 ]

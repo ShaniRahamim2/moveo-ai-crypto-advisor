@@ -25,6 +25,10 @@ function decodeEntities(value: string): string {
     .replace(/&quot;/g, '"')
     .replace(/&#0?39;|&apos;/g, "'")
     .replace(/&nbsp;/g, ' ')
+    // Feeds use numeric entities freely — &#8217; for a curly apostrophe is the
+    // common one, and it rendered literally in headlines.
+    .replace(/&#(\d+);/g, (_, code: string) => String.fromCodePoint(Number(code)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, code: string) => String.fromCodePoint(parseInt(code, 16)))
     .replace(/&amp;/g, '&');
 }
 
