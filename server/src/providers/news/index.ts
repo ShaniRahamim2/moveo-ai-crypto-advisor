@@ -50,7 +50,7 @@ export class LayeredNewsProvider implements NewsProvider {
     // to say which tier served — a full source list overflows the card header.
     tiers.push({
       name: 'rss',
-      label: 'Live RSS feeds',
+      label: 'Live RSS',
       status: 'ok',
       fetch: () => this.rss.getNews(),
     });
@@ -72,7 +72,7 @@ export class LayeredNewsProvider implements NewsProvider {
 
     const cached = this.cache.get(cacheKey);
     if (cached) {
-      return { ...cached, source: `${cached.source} (cached)` };
+      return cached;
     }
 
     for (const tier of this.tiers) {

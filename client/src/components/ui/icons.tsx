@@ -106,3 +106,11 @@ export function RefreshIcon({ className = 'h-4 w-4' }: IconProps) {
     </svg>
   );
 }
+
+export function ChevronDownIcon({ className = 'h-4 w-4' }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden="true" fill="none" strokeWidth="2">
+      <path d="M5 9l7 7 7-7" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}

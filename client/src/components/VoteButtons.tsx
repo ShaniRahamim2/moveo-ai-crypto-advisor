@@ -34,6 +34,9 @@ interface VoteButtonsProps {
   downLabel?: string;
   /** Icons only, with the labels kept in the tooltip and the accessible name. */
   compact?: boolean;
+  /** Overrides the tooltip and accessible name where "useful" is the wrong word. */
+  upTooltip?: string;
+  downTooltip?: string;
   onVoted?: (vote: 'UP' | 'DOWN') => void;
 }
 
@@ -43,8 +46,12 @@ export function VoteButtons({
   label,
   downLabel = 'Not useful',
   compact = false,
+  upTooltip,
+  downTooltip,
   onVoted,
 }: VoteButtonsProps) {
+  const upText = upTooltip ?? `Useful — ${label}`;
+  const downText = downTooltip ?? `${downLabel} — ${label}`;
   const { data } = useFeedback();
   const submitVote = useSubmitVote();
   const current = findVote(data?.feedback, sectionType, contentRef);
@@ -108,8 +115,8 @@ export function VoteButtons({
           type="button"
           onClick={() => vote('UP')}
           aria-pressed={current === 'UP'}
-          aria-label={`Useful: ${label}`}
-          title={`Useful — ${label}`}
+          aria-label={upText}
+          title={upText}
           className={`${base} ${
             confirming === 'UP'
               ? 'border-gain bg-gain/15 text-gain'
@@ -124,8 +131,8 @@ export function VoteButtons({
           type="button"
           onClick={() => vote('DOWN')}
           aria-pressed={current === 'DOWN'}
-          aria-label={`${downLabel}: ${label}`}
-          title={`${downLabel} — ${label}`}
+          aria-label={downText}
+          title={downText}
           className={`${base} ${
             confirming === 'DOWN'
               ? 'border-loss bg-loss/15 text-loss'

@@ -30,9 +30,7 @@ export function MemeSection({ deck, visible, current, onSelect }: MemeSectionPro
     return (
       <div>
         <p className="text-sm text-slate-500">
-          {hiddenCount > 0
-            ? 'You have hidden every meme.'
-            : 'No meme to show right now.'}
+          {hiddenCount > 0 ? 'You have hidden every meme.' : 'No meme to show right now.'}
         </p>
         {resetControl}
       </div>
@@ -45,15 +43,29 @@ export function MemeSection({ deck, visible, current, onSelect }: MemeSectionPro
   );
   const canBrowse = visible.length > 1;
 
+  const arrow =
+    'inline-flex items-center justify-center rounded-md border border-edge p-2 text-slate-400 transition-colors hover:border-slate-500 hover:text-slate-200';
+
   return (
     <div>
-      {/*
-        Every meme in the deck is mounted and only the current one is visible.
-        Swapping a single src blanks the card while the next image decodes, which
-        looked broken on local files that load in milliseconds. Holding them all
-        removes the gap entirely; the whole set is a few hundred kilobytes.
-      */}
       <figure>
+        {/* A title, not a footnote. */}
+        {(current.caption || current.subcaption) && (
+          <figcaption className="mb-3">
+            {current.caption && (
+              <span className="block text-sm font-medium text-slate-200">{current.caption}</span>
+            )}
+            {current.subcaption && (
+              <span className="mt-0.5 block text-xs text-slate-500">{current.subcaption}</span>
+            )}
+          </figcaption>
+        )}
+
+        {/*
+          Every meme in the deck stays mounted and only the current one is
+          visible. Swapping a single src blanks the card while the next image
+          decodes, which looked broken on local files that load in milliseconds.
+        */}
         <div className="relative overflow-hidden rounded-lg border border-edge bg-surface">
           {visible.map((meme) => (
             <img
@@ -69,22 +81,16 @@ export function MemeSection({ deck, visible, current, onSelect }: MemeSectionPro
             />
           ))}
         </div>
-
-        {(current.caption || current.subcaption) && (
-          <figcaption className="mt-3 text-xs text-slate-500">
-            {[current.caption, current.subcaption].filter(Boolean).join(' · ')}
-          </figcaption>
-        )}
       </figure>
 
       {canBrowse && (
-        <div className="mt-4 flex items-center gap-2">
+        <div className="mt-4 flex items-center justify-center gap-3">
           <button
             type="button"
             onClick={() => onSelect(visible[(index - 1 + visible.length) % visible.length]!)}
             aria-label="Previous meme"
             title="Previous meme"
-            className="inline-flex items-center justify-center rounded-md border border-edge p-1.5 text-slate-400 hover:border-slate-500 hover:text-slate-200"
+            className={arrow}
           >
             <ChevronLeftIcon />
           </button>
@@ -93,7 +99,7 @@ export function MemeSection({ deck, visible, current, onSelect }: MemeSectionPro
             onClick={() => onSelect(visible[(index + 1) % visible.length]!)}
             aria-label="Next meme"
             title="Next meme"
-            className="inline-flex items-center justify-center rounded-md border border-edge p-1.5 text-slate-400 hover:border-slate-500 hover:text-slate-200"
+            className={arrow}
           >
             <ChevronRightIcon />
           </button>

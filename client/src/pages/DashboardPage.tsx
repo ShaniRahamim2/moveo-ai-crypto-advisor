@@ -180,6 +180,8 @@ export function DashboardPage() {
                   ? {
                       downLabel: 'Hide this',
                       compactVote: true,
+                      upTooltip: 'Like this meme',
+                      downTooltip: 'Not my kind of meme — hide it',
                       onVoted: (vote: 'UP' | 'DOWN') => {
                         if (vote === 'DOWN' && visibleMemes.length > 1) {
                           const at = visibleMemes.findIndex((m) => m.id === currentMeme?.id);

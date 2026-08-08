@@ -162,8 +162,11 @@ describe('CoinGeckoProvider', () => {
     await provider.getPrices(hodler);
     const second = await provider.getPrices(hodler);
 
+    // A cache hit is still live data; the timestamp conveys its age, so the
+    // label stays identical to a fresh fetch.
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(second.source).toMatch(/cached/i);
+    expect(second.source).toBe('coingecko');
+    expect(second.status).toBe('ok');
   });
 });
 
@@ -196,7 +199,7 @@ describe('LayeredNewsProvider', () => {
 
     expect(cryptoPanic.getNews).toHaveBeenCalled();
     expect(result.status).toBe('ok');
-    expect(result.source).toBe('Live RSS feeds');
+    expect(result.source).toBe('Live RSS');
     expect(result.data.length).toBeGreaterThan(0);
   });
 

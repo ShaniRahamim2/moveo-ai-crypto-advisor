@@ -65,7 +65,7 @@ export class CoinGeckoProvider implements MarketDataProvider {
       return {
         status: 'ok',
         data: cached,
-        source: 'coingecko (cached)',
+        source: 'coingecko',
         fetchedAt: new Date().toISOString(),
       };
     }

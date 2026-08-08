@@ -252,6 +252,10 @@ of the document less trustworthy.
 - **The AI insight is cached for a full day** per personalization context. That
   is deliberate — the free tier allows roughly 50 requests a day — but it means
   the insight does not update as prices move. The prices beside it do.
+- **No password reset.** A reset flow needs a transactional email provider with
+  domain verification, which sits outside this assignment's free-tier
+  constraint. In a production build it would be the next authentication feature
+  after this one.
 - **News asset tagging is inferred from headlines**, since RSS carries no
   instrument metadata. Symbols are matched case-sensitively because several
   ticker symbols are also ordinary English words.
