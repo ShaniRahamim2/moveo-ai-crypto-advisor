@@ -22,15 +22,53 @@ export const SYSTEM_PROMPT = [
   'Write the insight as 60 to 110 words, two short paragraphs at most.',
 ].join(' ');
 
+function unescapeJsonString(value: string): string {
+  return value
+    .replace(/\\n/g, ' ')
+    .replace(/\\t/g, ' ')
+    .replace(/\\"/g, '"')
+    .replace(/\\\\/g, '\\')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Pulls a field out of a JSON-ish payload without parsing it. The closing quote
+ * is optional because the most common malformation is a reply truncated by the
+ * token limit, which leaves the last string unterminated.
+ */
+function extractField(text: string, field: string): string | null {
+  const match = new RegExp(`"${field}"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"?`, 'i').exec(text);
+  const value = match?.[1] ? unescapeJsonString(match[1]) : '';
+  return value || null;
+}
+
+/**
+ * Last resort. Removes JSON punctuation and field names so that whatever prose
+ * the model produced can still be shown. Braces and quoted keys must never
+ * reach the screen — this section is the centrepiece of the product, and debug
+ * output there is worse than a plain paragraph.
+ */
+function stripJsonScaffolding(text: string): string {
+  return unescapeJsonString(
+    text
+      .replace(/^[\s{[]+/, '')
+      .replace(/[\s}\]]+$/, '')
+      .replace(/"(?:summary|insight|text)"\s*:\s*/gi, '')
+      .replace(/"\s*,\s*"/g, ' ')
+      .replace(/^"|"$/g, ''),
+  ).replace(/^[,\s]+|[,\s]+$/g, '');
+}
+
 export interface ParsedInsight {
   summary: string | null;
   insight: string;
 }
 
 /**
- * The model is asked for JSON but cannot be relied on to return it. Anything
- * unparseable degrades to showing the full text uncollapsed, which is strictly
- * better than failing the section over a formatting problem.
+ * The model is asked for JSON and does not reliably produce it — replies get
+ * truncated by the token limit, wrapped in code fences, or given trailing
+ * commas. Every path here ends in readable prose.
  */
 export function parseInsightResponse(raw: string): ParsedInsight {
   const cleaned = raw
@@ -39,21 +77,31 @@ export function parseInsightResponse(raw: string): ParsedInsight {
     .replace(/\s*```$/, '')
     .trim();
 
-  try {
-    const start = cleaned.indexOf('{');
-    const end = cleaned.lastIndexOf('}');
-    if (start === -1 || end <= start) throw new Error('no object');
+  const start = cleaned.indexOf('{');
+  const candidate = start === -1 ? cleaned : cleaned.slice(start);
 
-    const parsed = JSON.parse(cleaned.slice(start, end + 1)) as Record<string, unknown>;
-    const insight = typeof parsed.insight === 'string' ? parsed.insight.trim() : '';
-    const summary = typeof parsed.summary === 'string' ? parsed.summary.trim() : '';
-
-    if (!insight) throw new Error('no insight field');
-
-    return { summary: summary || null, insight };
-  } catch {
-    return { summary: null, insight: cleaned };
+  // 1. Straight parse, plus a repair for trailing commas.
+  for (const attempt of [candidate, candidate.replace(/,\s*([}\]])/g, '$1')]) {
+    const end = attempt.lastIndexOf('}');
+    if (end <= 0) continue;
+    try {
+      const parsed = JSON.parse(attempt.slice(0, end + 1)) as Record<string, unknown>;
+      const insight = typeof parsed.insight === 'string' ? parsed.insight.trim() : '';
+      const summary = typeof parsed.summary === 'string' ? parsed.summary.trim() : '';
+      if (insight) return { summary: summary || null, insight };
+    } catch {
+      // Falls through to field extraction.
+    }
   }
+
+  // 2. Field extraction, which survives a truncated reply.
+  const insight = extractField(candidate, 'insight');
+  const summary = extractField(candidate, 'summary');
+  if (insight) return { summary, insight };
+
+  // 3. Nothing structured left; show the prose with the scaffolding removed.
+  const stripped = stripJsonScaffolding(candidate);
+  return { summary: null, insight: stripped || cleaned.replace(/[{}"]/g, '').trim() };
 }
 
 /**

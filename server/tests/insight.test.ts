@@ -309,3 +309,55 @@ describe('insight JSON contract', () => {
     expect(result.data.text).toMatch(/plain-text insight/);
   });
 });
+
+describe('malformed model output never reaches the screen', () => {
+  const NO_SCAFFOLDING = /[{}]|"(?:summary|insight|text)"\s*:|\\"/;
+
+  // The real production failure: max_tokens cut the reply mid-object, so the
+  // JSON had no closing brace and the raw payload was rendered verbatim.
+  const truncated =
+    '{ "summary": "XRP Ledger amendments target tokenized assets.", "insight": "The latest XRP Ledger amendments handle tokenized Wall Street assets, indicating expanding institutional interest across the ecosystem."';
+
+  const cases: [string, string][] = [
+    ['truncated mid-object', truncated],
+    ['no closing quote at all', '{"summary":"A summary.","insight":"An insight that just stops'],
+    ['trailing comma', '{"summary":"A summary.","insight":"An insight.",}'],
+    ['wrapped in code fences', '```json\n{"summary":"A summary.","insight":"An insight."}\n```'],
+    ['prose before the object', 'Here is your JSON:\n{"summary":"A summary.","insight":"An insight."}'],
+    ['escaped quotes inside', '{"summary":"He said \\"buy\\".","insight":"BTC held \\"steady\\" today."}'],
+    ['keys but no braces', '"summary": "A summary.", "insight": "An insight."'],
+    ['not JSON at all', 'Bitcoin held steady through the session today.'],
+  ];
+
+  for (const [name, raw] of cases) {
+    it(`renders readable prose: ${name}`, () => {
+      const parsed = parseInsightResponse(raw);
+
+      expect(parsed.insight.length).toBeGreaterThan(0);
+      expect(parsed.insight).not.toMatch(NO_SCAFFOLDING);
+      if (parsed.summary) expect(parsed.summary).not.toMatch(NO_SCAFFOLDING);
+    });
+  }
+
+  it('recovers both fields from the truncated production reply', () => {
+    const parsed = parseInsightResponse(truncated);
+
+    expect(parsed.summary).toBe('XRP Ledger amendments target tokenized assets.');
+    expect(parsed.insight).toContain('XRP Ledger amendments handle tokenized Wall Street assets');
+    expect(parsed.insight).not.toContain('{');
+  });
+
+  it('renders a poisoned cache row as prose rather than a payload', async () => {
+    prismaMock.insightCache.findUnique.mockResolvedValue({
+      insightText: JSON.stringify({ summary: null, text: truncated }),
+      model: 'stub-model:free',
+      generatedAt: new Date(),
+    });
+
+    const result = await new InsightService(stubProvider() as never).getInsight(hodler, prices, news);
+
+    expect(result.data.text).not.toMatch(NO_SCAFFOLDING);
+    expect(result.data.text).toContain('XRP Ledger');
+    expect(result.data.summary).toBe('XRP Ledger amendments target tokenized assets.');
+  });
+});

@@ -13,6 +13,7 @@ import { DashboardSkeleton } from '../components/dashboard/DashboardSkeleton';
 import { PersonalizationSummary } from '../components/PersonalizationSummary';
 import { PricesRefreshButton } from '../components/dashboard/PricesRefreshButton';
 import { useHiddenContent } from '../feedback/hidden';
+import { toTitleCase } from '../lib/text';
 import { Button } from '../components/ui/Button';
 import type {
   CoinPrice,
@@ -23,11 +24,13 @@ import type {
   NewsItem,
 } from '../dashboard/types';
 
+// Computed client-side on purpose: the server runs in one region and users are
+// in another, so a server-side hour would greet people wrong.
 function greeting(date = new Date()): string {
   const hour = date.getHours();
-  if (hour < 12) return 'Good morning';
-  if (hour < 18) return 'Good afternoon';
-  return 'Good evening';
+  if (hour < 12) return 'Good Morning';
+  if (hour < 18) return 'Good Afternoon';
+  return 'Good Evening';
 }
 
 export function DashboardPage() {
@@ -105,7 +108,7 @@ export function DashboardPage() {
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
               <h1 className="text-2xl font-semibold text-white">
-                {user?.name ? `${greeting()}, ${user.name.split(' ')[0]}` : greeting()}
+                {user?.name ? `${greeting()}, ${toTitleCase(user.name)}` : greeting()}
               </h1>
               {data && (
                 <p className="mt-1 text-sm text-slate-500">

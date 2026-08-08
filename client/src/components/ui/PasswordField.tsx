@@ -37,7 +37,7 @@ export function PasswordField({ label, error, hint, ...props }: PasswordFieldPro
           title={visible ? 'Hide password' : 'Show password'}
           className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-slate-500 hover:text-slate-300"
         >
-          {visible ? <EyeOffIcon /> : <EyeIcon />}
+          {visible ? <EyeIcon /> : <EyeOffIcon />}
         </button>
       </div>
 

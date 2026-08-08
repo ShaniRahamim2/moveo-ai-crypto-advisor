@@ -36,7 +36,7 @@ export class OpenRouterProvider implements AIProvider {
       method: 'POST',
       body: JSON.stringify({
         model: this.model,
-        max_tokens: 600,
+        max_tokens: 900,
         temperature: 0.6,
         // Reasoning models otherwise spend the whole token budget thinking and
         // return empty content.

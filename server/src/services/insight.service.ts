@@ -52,14 +52,28 @@ function parseStoredInsight(stored: string): { summary: string | null; text: str
   try {
     const parsed = JSON.parse(stored) as { summary?: unknown; text?: unknown };
     if (typeof parsed.text === 'string' && parsed.text.trim()) {
-      return {
-        summary: typeof parsed.summary === 'string' && parsed.summary.trim() ? parsed.summary : null,
-        text: parsed.text,
-      };
+      const summary =
+        typeof parsed.summary === 'string' && parsed.summary.trim() ? parsed.summary : null;
+
+      // Rows written before the parser was hardened can hold a raw model payload
+      // in `text`. Re-parsing here means they render as prose rather than as
+      // braces and quoted keys.
+      if (parsed.text.trimStart().startsWith('{')) {
+        const recovered = parseInsightResponse(parsed.text);
+        return { summary: summary ?? recovered.summary, text: recovered.insight };
+      }
+
+      return { summary, text: parsed.text };
     }
   } catch {
     // Falls through to the legacy plain-text shape.
   }
+
+  if (stored.trimStart().startsWith('{')) {
+    const recovered = parseInsightResponse(stored);
+    return { summary: recovered.summary, text: recovered.insight };
+  }
+
   return { summary: null, text: stored };
 }
 
