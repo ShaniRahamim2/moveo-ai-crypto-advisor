@@ -93,7 +93,7 @@ export class InsightService {
       return {
         status: 'ok',
         data: cached,
-        source: `${cached.model ?? 'cache'} (cached today)`,
+        source: 'AI-generated · cached today',
         fetchedAt: new Date().toISOString(),
       };
     }
@@ -125,7 +125,7 @@ export class InsightService {
       return {
         status: 'ok',
         data: insight,
-        source: this.provider.model,
+        source: 'AI-generated',
         fetchedAt: new Date().toISOString(),
       };
     } catch (err) {

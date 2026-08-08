@@ -9,6 +9,10 @@ interface SectionCardProps {
   /** The AI section is visually separated so generated text is never mistaken for data. */
   generated?: boolean;
   downLabel?: string;
+  compactVote?: boolean;
+  /** Market News votes per article instead, so its section control is hidden. */
+  hideVote?: boolean;
+  actions?: ReactNode;
   onVoted?: (vote: 'UP' | 'DOWN') => void;
 }
 
@@ -17,6 +21,9 @@ export function SectionCard({
   children,
   generated = false,
   downLabel,
+  compactVote = false,
+  hideVote = false,
+  actions,
   onVoted,
 }: SectionCardProps) {
   return (
@@ -37,14 +44,18 @@ export function SectionCard({
           </p>
         </div>
 
-        <div className="shrink-0 sm:self-start">
-          <VoteButtons
-            sectionType={section.type}
-            contentRef={section.contentRef}
-            label={section.title}
-            {...(downLabel ? { downLabel } : {})}
-            {...(onVoted ? { onVoted } : {})}
-          />
+        <div className="flex shrink-0 items-center gap-2 sm:self-start">
+          {actions}
+          {!hideVote && (
+            <VoteButtons
+              sectionType={section.type}
+              contentRef={section.contentRef}
+              label={section.title}
+              compact={compactVote}
+              {...(downLabel ? { downLabel } : {})}
+              {...(onVoted ? { onVoted } : {})}
+            />
+          )}
         </div>
       </header>
 

@@ -531,3 +531,60 @@ describe('CoinGecko API key and persisted snapshots', () => {
     expect(result.data).toHaveLength(2);
   });
 });
+
+describe('news summary truncation', () => {
+  function feedWithDescription(description: string) {
+    return {
+      ok: true,
+      status: 200,
+      text: () =>
+        Promise.resolve(
+          `<rss><channel><item><title>A headline</title><description>${description}</description><link>https://example.com/1</link><pubDate>${new Date().toUTCString()}</pubDate></item></channel></rss>`,
+        ),
+      json: () => Promise.resolve({}),
+    } as unknown as Response;
+  }
+
+  async function summaryFor(description: string) {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(feedWithDescription(description)));
+    const items = await new RssNewsProvider([
+      { name: 'Test', url: 'https://example.com/rss' },
+    ]).getNews();
+    return items[0]!.summary;
+  }
+
+  it('keeps a short description intact and unmarked', async () => {
+    const summary = await summaryFor('Bitcoin held steady through the session.');
+    expect(summary).toBe('Bitcoin held steady through the session.');
+    expect(summary).not.toMatch(/…$/);
+  });
+
+  it('ends a long description on a sentence boundary', async () => {
+    const long =
+      'Bitcoin held steady through the European session as traders weighed the latest inflation print. ' +
+      'Analysts pointed to thin liquidity across major venues and a lack of conviction in either direction. ' +
+      'Volumes remained subdued into the afternoon.';
+
+    const summary = (await summaryFor(long))!;
+
+    expect(summary.length).toBeLessThan(long.length);
+    expect(summary).toMatch(/[.!?]$/);
+    expect(summary).not.toMatch(/…/);
+  });
+
+  it('never cuts in the middle of a word', async () => {
+    const noPunctuation = `${'extraordinarily '.repeat(30)}end`;
+
+    const summary = (await summaryFor(noPunctuation))!;
+    const trimmed = summary.replace(/…$/, '').trim();
+
+    expect(trimmed.endsWith('extraordinarily')).toBe(true);
+    expect(summary.endsWith('…')).toBe(true);
+  });
+
+  it('strips HTML out of the description', async () => {
+    const summary = await summaryFor('&lt;p&gt;Bitcoin &lt;b&gt;rose&lt;/b&gt; today.&lt;/p&gt;');
+    expect(summary).not.toMatch(/[<>]/);
+    expect(summary).toContain('rose');
+  });
+});

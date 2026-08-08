@@ -27,6 +27,8 @@ interface VoteButtonsProps {
   label: string;
   /** MEME uses "Hide" rather than "Not useful", because that is what it does. */
   downLabel?: string;
+  /** Icons only, with the labels kept in the tooltip and the accessible name. */
+  compact?: boolean;
   onVoted?: (vote: 'UP' | 'DOWN') => void;
 }
 
@@ -35,6 +37,7 @@ export function VoteButtons({
   contentRef,
   label,
   downLabel = 'Not useful',
+  compact = false,
   onVoted,
 }: VoteButtonsProps) {
   const { data } = useFeedback();
@@ -55,8 +58,9 @@ export function VoteButtons({
     onVoted?.(next);
   }
 
-  const base =
-    'inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors';
+  const base = compact
+    ? 'inline-flex items-center justify-center rounded-md border p-1.5 transition-colors'
+    : 'inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors';
 
   return (
     <div className="flex flex-col items-start gap-1.5 sm:items-end">
@@ -74,7 +78,7 @@ export function VoteButtons({
           }`}
         >
           <ThumbsUpIcon filled={current === 'UP'} />
-          <span>Useful</span>
+          {!compact && <span>Useful</span>}
         </button>
 
         <button
@@ -90,7 +94,7 @@ export function VoteButtons({
           }`}
         >
           <ThumbsDownIcon filled={current === 'DOWN'} />
-          <span>{downLabel}</span>
+          {!compact && <span>{downLabel}</span>}
         </button>
       </div>
 
