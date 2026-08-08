@@ -58,10 +58,21 @@ function orderSections(contentPreferences: ContentPreference[]): SectionType[] {
     }
   }
 
-  return [...BASE_ORDER].sort((a, b) => {
+  const ordered = [...BASE_ORDER].sort((a, b) => {
     const diff = (scores.get(b) ?? 0) - (scores.get(a) ?? 0);
     return diff !== 0 ? diff : BASE_ORDER.indexOf(a) - BASE_ORDER.indexOf(b);
   });
+
+  // A preference may promote a section above prices, but never bury prices at
+  // the bottom: a financial product that opens with a meme and reaches prices
+  // last does not read as one. Prices are pinned to first or second place.
+  const pricesAt = ordered.indexOf('COIN_PRICES');
+  if (pricesAt > 1) {
+    ordered.splice(pricesAt, 1);
+    ordered.splice(1, 0, 'COIN_PRICES');
+  }
+
+  return ordered;
 }
 
 /**

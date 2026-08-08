@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { ContentPreference } from '@prisma/client';
 import { buildPersonalizationContext } from '../src/services/personalization.js';
 
 const hodler = {
@@ -157,5 +158,47 @@ describe('buildPersonalizationContext', () => {
 
   it('is pure — repeated calls with equal input give equal output', () => {
     expect(buildPersonalizationContext(hodler)).toEqual(buildPersonalizationContext(hodler));
+  });
+});
+
+describe('coin prices placement', () => {
+  const ALL: ContentPreference[] = ['MARKET_NEWS', 'CHARTS', 'SOCIAL', 'FUN'];
+
+  function everyCombination(): ContentPreference[][] {
+    const combos: ContentPreference[][] = [];
+    for (let mask = 1; mask < 1 << ALL.length; mask++) {
+      combos.push(ALL.filter((_, i) => mask & (1 << i)));
+    }
+    return combos;
+  }
+
+  // A financial product that reaches prices last does not read as one, whatever
+  // the preferences say.
+  it('never places prices below second, across all 15 combinations', () => {
+    const combos = everyCombination();
+    expect(combos).toHaveLength(15);
+
+    for (const contentPreferences of combos) {
+      const { sectionOrder } = buildPersonalizationContext({ ...hodler, contentPreferences });
+      const position = sectionOrder.indexOf('COIN_PRICES');
+
+      expect(position, `prices at ${position} for ${contentPreferences.join('+')}`).toBeLessThan(2);
+      expect(sectionOrder).toHaveLength(4);
+    }
+  });
+
+  it('still lets a preference promote another section above prices', () => {
+    expect(
+      buildPersonalizationContext({ ...hodler, contentPreferences: ['FUN'] }).sectionOrder[0],
+    ).toBe('MEME');
+    expect(
+      buildPersonalizationContext({ ...hodler, contentPreferences: ['MARKET_NEWS'] }).sectionOrder[0],
+    ).toBe('MARKET_NEWS');
+  });
+
+  it('leads with prices when Charts is selected', () => {
+    expect(
+      buildPersonalizationContext({ ...hodler, contentPreferences: ['CHARTS'] }).sectionOrder[0],
+    ).toBe('COIN_PRICES');
   });
 });
