@@ -100,7 +100,12 @@ export function DashboardPage() {
           />
         );
       case 'MARKET_NEWS':
-        return <MarketNewsSection items={section.data as NewsItem[]} />;
+        return (
+          <MarketNewsSection
+            items={section.data as NewsItem[]}
+            generatedAt={data?.generatedAt ?? ''}
+          />
+        );
       case 'AI_INSIGHT':
         return <InsightSection insight={section.data as Insight} />;
       case 'MEME':

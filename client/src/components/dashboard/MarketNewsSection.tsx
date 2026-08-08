@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ExternalLinkIcon, ThumbsDownIcon, ThumbsUpIcon } from '../ui/icons';
 import { relativeTime } from '../../dashboard/format';
 import { findVote, useFeedback, useResetHidden, useSubmitVote } from '../../feedback/queries';
@@ -79,7 +79,13 @@ function ArticleFeedback({
   );
 }
 
-export function MarketNewsSection({ items }: { items: NewsItem[] }) {
+export function MarketNewsSection({
+  items,
+  generatedAt,
+}: {
+  items: NewsItem[];
+  generatedAt: string;
+}) {
   const resetHidden = useResetHidden();
   const submitVote = useSubmitVote();
   const { articleUrls } = useHiddenContent();
@@ -88,6 +94,33 @@ export function MarketNewsSection({ items }: { items: NewsItem[] }) {
   // row can animate out. An instant disappearance gives no confirmation that the
   // click registered.
   const [dismissing, setDismissing] = useState<Set<string>>(new Set());
+
+  // Restoring refetches the dashboard, and the server returns the restored
+  // articles in their original positions — so anything the reader is looking at
+  // slides down the page. The URLs being restored are recorded at the click and
+  // moved to the end of the rendered order instead.
+  const [appended, setAppended] = useState<string[]>([]);
+  const awaitingRestore = useRef(false);
+
+  // Keyed on generatedAt rather than the items array: React Query's structural
+  // sharing hands back the identical array when a refetch returns the same
+  // headlines, so identity misses a refresh that changed nothing. Every fetch
+  // stamps a new generatedAt, and the prices-only refresh preserves it.
+  useEffect(() => {
+    // Only the payload the restore itself triggered carries the appended
+    // articles. Any later fetch is a fresh list and orders itself.
+    if (awaitingRestore.current) {
+      awaitingRestore.current = false;
+      return;
+    }
+    setAppended((prev) => (prev.length > 0 ? [] : prev));
+  }, [generatedAt]);
+
+  function restore() {
+    awaitingRestore.current = true;
+    setAppended([...articleUrls]);
+    resetHidden.mutate('MARKET_NEWS');
+  }
 
   function dismiss(item: NewsItem) {
     setDismissing((prev) => new Set(prev).add(item.url));
@@ -113,12 +146,17 @@ export function MarketNewsSection({ items }: { items: NewsItem[] }) {
   // Filtered here, not only on the server, so a dismissal is visible on click
   // rather than on the next dashboard load.
   const visible = items.filter((item) => !articleUrls.has(item.url));
+  const restored = appended.length > 0 ? visible.filter((item) => appended.includes(item.url)) : [];
+  const ordered =
+    restored.length > 0
+      ? [...visible.filter((item) => !appended.includes(item.url)), ...restored]
+      : visible;
   const hiddenCount = articleUrls.size;
 
   const resetControl = hiddenCount > 0 && (
     <button
       type="button"
-      onClick={() => resetHidden.mutate('MARKET_NEWS')}
+      onClick={restore}
       disabled={resetHidden.isPending}
       className="mt-3 text-xs text-accent hover:underline disabled:opacity-50"
     >
@@ -142,7 +180,7 @@ export function MarketNewsSection({ items }: { items: NewsItem[] }) {
   return (
     <div>
       <ul className="divide-y divide-edge">
-        {visible.map((item) => (
+        {ordered.map((item) => (
           <li
             key={item.url}
             className={`overflow-hidden py-3 transition-all duration-[450ms] first:pt-0 ${

@@ -53,8 +53,13 @@ export function MemeSection({ deck, visible, current, onSelect }: MemeSectionPro
           Every meme in the deck stays mounted and only the current one is
           visible. Swapping a single src blanks the card while the next image
           decodes, which looked broken on local files that load in milliseconds.
+
+          The frame has a fixed height so the card is the same size for every
+          image and does not resize while one loads. Images are bounded rather
+          than cropped — several are multi-panel comics, and a uniform crop
+          would cut off the punchline.
         */}
-        <div className="relative overflow-hidden rounded-lg border border-edge bg-surface">
+        <div className="relative flex h-72 items-center justify-center overflow-hidden rounded-lg border border-edge bg-surface sm:h-96">
           {visible.map((meme) => (
             <img
               key={meme.id}
@@ -63,8 +68,8 @@ export function MemeSection({ deck, visible, current, onSelect }: MemeSectionPro
               aria-hidden={meme.id === current.id ? undefined : true}
               className={
                 meme.id === current.id
-                  ? 'w-full'
-                  : 'pointer-events-none absolute inset-0 h-full w-full opacity-0'
+                  ? 'max-h-full max-w-full object-contain'
+                  : 'pointer-events-none absolute inset-0 m-auto max-h-full max-w-full opacity-0'
               }
             />
           ))}
