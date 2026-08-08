@@ -6,10 +6,8 @@
 
 ## What it is
 
-A personalized crypto dashboard. A user signs up, answers three short questions
-about what they hold and how they invest, and gets a daily briefing built around
-those answers. Every section can be rated, and on two of them the rating changes
-what the user sees immediately.
+A personalized crypto dashboard. Every section can be rated, and on two of them
+the rating changes what the user sees immediately.
 
 **Flow:** sign up → three-question onboarding → dashboard → rate sections → edit
 preferences and watch the dashboard change.

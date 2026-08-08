@@ -1,5 +1,41 @@
 # AI usage
 
+## Summary
+
+Claude Code wrote the great majority of the code in this repository. I set the
+constraints, made the trade-offs, checked claims against evidence, and overruled
+it where I disagreed. The detail below is long because it is a working record;
+this section is the short version.
+
+Four constraints were fixed before any code existed, because they are the
+expensive things to change later: a strict P0/P1/P2 priority order with an
+instruction to cut from the bottom and report every cut; a failing provider
+degrades its own dashboard section and never the request; every external
+integration behind an injectable interface, because that is the only way the
+required 429 and timeout tests can exist without live calls; and daily caching
+of the AI insight as a hard requirement rather than an optimisation.
+
+The decisions where I overruled the model matter more than the ones I accepted.
+It proposed shipping curated static news after CryptoPanic proved unreachable —
+I required all three tiers layered behind one interface, and that is the only
+reason the news section serves live data today. It proposed text cards in place
+of meme images, arguing that hotlinked images can 404 — I rejected the premise,
+because self-hosting gets robustness and an actual image at the same time. It
+recommended weighing rate limiting against its cost late in the build — I took
+it anyway, and the verification I demanded alongside it caught a proxy setting
+that would have throttled every user in the world as a single client.
+
+Two failures are worth more than any of the successes. A commit with a
+TypeScript error passed lint and 100 tests, failed its deploy silently, and left
+production serving a stale build behind a green health check. And the Coin
+Prices section broke in production because the fallback protecting it, while
+correctly written, could never run — it read an in-process cache that only fills
+after a success that never happened. The first taught that a green suite is not
+a green build and a push is not a release; the second, that unreachable code is
+worse than absent code, because it reads as protection.
+
+The phase-by-phase record follows, including the mistakes.
+
 ## How this project was built
 
 This project was built with Claude Code as the primary implementer. It wrote the
@@ -20,6 +56,71 @@ what I accepted on the strength of a passing test or a working deployment.
 
 This document is written as the work happens, one entry per phase. It is a record
 of what actually occurred, including the mistakes.
+
+---
+
+## Two agents, in separate roles
+
+I ran two agents on different models, in parallel, doing different jobs.
+
+Claude Code implemented. It had the repository, wrote the code, ran the tests and
+made the commits. A second agent on a different model acted as reviewer and
+researcher: it never wrote a line of code and never read the codebase. Its job
+was to pressure-test my decisions, draft the specification and the phase
+instructions, and verify external facts before anything was built on them.
+
+I am not claiming this arrangement produces better software in general — I ran
+one project this way and have no basis for that. What I can point to is what the
+reviewing agent caught before it cost anything:
+
+- Render's free Postgres is deleted 30 days after creation. Caught before Phase
+  2, which is why the database is on Neon. Had it surfaced later, the reviewer's
+  access could have expired before they opened it.
+- OpenRouter's free tier allows roughly 50 requests a day. That single fact
+  turned daily caching of the AI insight from an optimisation into a hard
+  requirement written into the spec.
+- Prisma migrations fail against a connection pooler. This is why `DATABASE_URL`
+  and `DIRECT_URL` were both specified up front rather than debugged at the
+  first migration.
+- Committing recognisable meme formats to a public repository is a rights
+  problem. Raised before any image file went in.
+
+The useful framing is separation of concerns rather than anything about model
+quality. One agent executes with full context; the other reviews without it. The
+reviewer had no stake in defending decisions it had not implemented, and the
+implementer was not grading its own work. Every item above is a fact about the
+world rather than about the code, which is exactly the category an implementer
+deep in a file is least likely to stop and check.
+
+---
+
+## The judgement behind the direction
+
+This document records what I checked. Knowing where to check is the part that
+does not show up in a diff, so these are the calls that shaped the build.
+
+I fixed the per-section status contract before implementation rather than after.
+`GET /api/dashboard` returns 200 with a status on every section. Retrofitting
+partial failure onto a route that assumes success is a rewrite, not a change, and
+by the time anyone wants it they are usually already in production.
+
+Injectable provider interfaces were required for one stated reason: they are the
+only way the mandated 429 and timeout tests can exist without calling live APIs.
+Not architectural taste. Naming the reason mattered — a constraint with a purpose
+survives a deadline, and a stylistic preference does not.
+
+I found the empty Coin Prices section by opening production myself, and I read it
+as a bug rather than a limitation of the free tier. That reading was the whole
+diagnosis. "CoinGecko rate-limits, nothing to be done" would have shipped a
+dashboard whose most important section was blank.
+
+I rejected a 30-second cooldown on the prices refresh. It sits inside a 90-second
+server cache, so three presses would return byte-identical data and the button
+would read as broken. The cooldown matches the cache.
+
+I overruled per-article thumbs in favour of a single dismiss control. Thumbs on
+every article means a `contentRef` per item, a schema change, and nine sets of
+controls on one screen. Same power for the user, a fraction of the cost.
 
 ---
 
@@ -188,15 +289,6 @@ the deployed API across origins before any feature is built on top. Deploying
 early is deliberate — deployment problems surface at the worst possible time when
 they are left to the end.
 
-**My decision on news providers.** It reported CryptoPanic as unreachable and
-proposed shipping the static fallback, with live RSS offered only as an
-alternative I could take instead. I rejected that framing and required all three
-layered behind the one interface, in priority order: CryptoPanic first (it is the
-only source carrying the community signal the Social preference needs), RSS
-second, static last. A P0 section serving visibly sample data reads as
-unfinished even when the assignment permits it, and 30 minutes is a fair price
-for genuinely live news. The tier actually serving in production gets reported.
-
 ---
 
 ## Phase 3 — authentication
@@ -223,7 +315,7 @@ routing, and the auth test suite.
   that link was an infinite redirect. It caught this before committing and
   removed the link rather than loosening the route guard — the right way round.
 
-**A lint failure worth recording.** `react-hooks/set-state-in-effect` rejected
+`react-hooks/set-state-in-effect` rejected
 the auth provider for calling `setStatus('anonymous')` inside an effect when no
 token exists. The tempting fix is to disable the rule. Instead the initial state
 is now derived — `useState(() => getToken() ? 'loading' : 'anonymous')` — and the
@@ -245,7 +337,7 @@ rather than weaken the check, and this is a case where that paid off.
   the dashboard, confirmed the session survives a hard refresh, and confirmed
   that clearing the token bounces a direct visit to `/dashboard` back to login.
 
-**A false alarm worth recording, because it nearly became a wrong bug report.**
+One false alarm nearly became a wrong bug report.
 Driving the login form through browser automation appeared to show the form not
 submitting — no network request, no error. The app was fine. Setting an input's
 `value` programmatically does not fire the events React listens for, so the
@@ -289,13 +381,13 @@ the transcription errors that make this failure mode common.
   Four preferences give sixteen combinations; a weight table handles all of them
   in a few lines and is far easier to test.
 
-**A judgement call I want on record.** The spec says "cap selection at 3–8
-assets" in one sentence and "require at least one asset" in the next. These
-disagree about the minimum. It implemented a maximum of 8 and a minimum of 1,
-with "three to five works well" as on-screen guidance rather than a hard gate. I
-am comfortable with that reading — rejecting a user who genuinely only holds
-Bitcoin would be worse than the alternative — but it is an interpretation and it
-was flagged rather than silently chosen.
+My own spec contradicted itself here: "cap selection at 3–8 assets" in one
+sentence, "require at least one asset" in the next. It implemented a maximum of 8
+and a minimum of 1, with "three to five works well" as on-screen guidance rather
+than a hard gate, and flagged the conflict instead of picking silently.
+
+I took that reading. A holder with only Bitcoin is a real user, and turning them
+away to satisfy a guideline is worse than a single-asset dashboard.
 
 **Verified by hand:**
 
@@ -311,19 +403,11 @@ was flagged rather than silently chosen.
   seven preference combinations, and one that the AI context contains no email,
   password, token or user id.
 
-**Spec ambiguity I surfaced and resolved.** The build plan said "cap selection at
-3–8 assets" in one sentence and "require at least one asset" in the next. Those
-disagree about the minimum. It implemented max 8 / min 1 and flagged the conflict
-rather than picking silently. I confirmed that reading: a holder with only
-Bitcoin is a real user, and rejecting them would be worse than allowing a
-single-asset dashboard. The 3–5 suggestion stays as on-screen guidance.
+Cleanup nearly went wrong. The step for removing test accounts was about to run
+broadly against the users table. Listing the rows first showed a third account
+that was not a test fixture — a real signup made while verifying the deployment.
 
-**A near miss during cleanup.** The cleanup step for test accounts was about to
-be run broadly against the users table. Listing the rows first showed a third
-account that was not a test fixture — a real signup made while verifying the
-deployment. Checking before deleting is the only reason it survived. Nothing
-should delete from a shared database without looking at what it is about to
-remove first.
+Checking before deleting is the only reason it survived.
 
 ---
 
@@ -354,7 +438,7 @@ would have shipped as static sample content.
   well. All four returned real RSS in 97–483ms. Had they been blocked the same
   way, two hours of provider work would have been wasted.
 
-**A real bug that only a live call would have found.** Running the finished
+One bug could only ever have been found by a live call. Running the finished
 providers against the real APIs produced a headline tagged with both BTC and
 NEAR: _"Why Bitcoin's BIP-110 refuses to die despite near-zero miner support."_
 The asset detector was matching symbols case-insensitively, so `near-zero`
@@ -376,16 +460,16 @@ only real data exposed it.
 
 **Cut, and recorded as cut.** The Social preference now only reorders sections.
 The ranking code that applies a community signal exists and is tested, but no
-reachable tier supplies one, and inventing a score from RSS data would be
-fabricating a signal. Per your instruction, not forced. This is a genuine
-reduction against amendment 17.1 and `PROJECT_STATUS.md` marks it `[!]`, not
-done.
+reachable tier supplies one. I ruled out synthesising a score from RSS data: an
+invented signal is worse than an absent one, because it looks like the feature
+works. This is a genuine reduction against amendment 17.1 and `PROJECT_STATUS.md`
+marks it `[!]`, not done.
 
-**A self-inflicted error worth recording.** A stray `SAMPLE` constant with a
-nonsense type annotation was written into the static news module and then removed
-before commit — dead code that would have shipped had it not been re-read. A
-separate mistake put an `await import` inside a non-async `describe` block, which
-failed the whole test file to load; the suite caught it immediately.
+Two self-inflicted errors, both caught before they mattered. A stray `SAMPLE`
+constant with a nonsense type annotation went into the static news module and was
+removed before commit — dead code that would have shipped had it not been
+re-read. And an `await import` inside a non-async `describe` block failed the
+whole test file to load; the suite caught that immediately.
 
 **Verified by hand against live APIs:** two contrasting profiles returned
 different coins in the user's own selection order, with 168-point sparklines
@@ -393,9 +477,9 @@ present for the Charts profile and absent for the other; news returned six live
 items from four feeds with correct asset tagging; the meme rotated without
 repeating.
 
-**Temporary code removed as promised.** The `/api/_diag` probe added at `bdce63d`
-was deleted at `a8ffbc4` before the phase closed, with a checklist line in
-`PROJECT_STATUS.md` so it could not quietly survive to submission.
+The `/api/_diag` probe added at `bdce63d` was deleted at `a8ffbc4` before the
+phase closed, with a checklist line in `PROJECT_STATUS.md` so it could not quietly
+survive to submission.
 
 ---
 
@@ -475,22 +559,21 @@ a car manufacturer's branding, and one used a recognisable format built around a
 real person. None are worth the exposure in a public repository. That screening
 was mine to do, and it is the reason the count is 14 rather than 17.
 
-**A geometry bug it caught by checking rather than assuming.** After generating
-the illustrations it measured the lowest drawn element in each file instead of
-eyeballing them, and found two where the artwork ran into the caption — one by
-60 pixels. Both fixed and re-measured, then confirmed visually.
+After generating the illustrations it measured the lowest drawn element in each
+file rather than eyeballing them, and found two where the artwork ran into the
+caption — one by 60 pixels. Both fixed, re-measured, then confirmed visually.
 
-**A correction it made to itself, in my favour.** It reported that the JSON meme
-manifest was not reaching the build output and would break in production. That
-was wrong — its directory listing had been truncated — and it said so plainly
-once it ran the built module and saw all entries load. I would rather have the
-retraction than a build step that was never needed.
+It also corrected itself in my favour. It reported that the JSON meme manifest
+was not reaching the build output and would break in production. That was wrong;
+its directory listing had been truncated. It said so plainly once it ran the
+built module and saw all entries load. I would rather have the retraction than a
+build step that was never needed.
 
-**Manifest safety, because I am hand-editing it.** Three guards: a malformed row
-is skipped with a logged warning instead of crashing the section, a test asserts
-every manifest entry resolves to a file that actually exists on disk, and a test
-asserts ids and image paths are unique. Adding or removing a meme touches only
-`memes.json` and the folder — never code.
+The manifest is hand-edited, so it has three guards: a malformed row is skipped
+with a logged warning instead of crashing the section, a test asserts every entry
+resolves to a file that exists on disk, and a test asserts ids and image paths
+are unique. Adding or removing a meme touches only `memes.json` and the folder —
+never code.
 
 ---
 
@@ -509,7 +592,9 @@ vote UI component.
 - **References are order-insensitive but content-sensitive.** `prices:BTC,ETH`
   and `prices:ETH,BTC` are the same reference, so a vote survives the user
   reordering their assets; a different set of news URLs produces a different
-  reference, so a vote does not silently carry over to unrelated content. Both
+  reference, so a vote does not silently carry over to unrelated content. Most
+  implementations get this wrong in one direction — either the vote detaches on
+  any trivial change, or it sticks to a section regardless of what is in it. Both
   directions are tested.
 - **The personalization context is snapshotted server-side at vote time**, read
   from the database rather than trusted from the request body. A vote without the
@@ -538,22 +623,13 @@ seeded count of three rather than issuing a broad delete.
 in, the refresh control, coin logos, the sparkline, the onboarding additions, and
 the visual pass.
 
-**Two things from the previous phase that belong here.**
-
-- **A test nobody asked for.** It added a case that posts `userId: "someone_else"`
-  in the request body and asserts the upsert still keys on the authenticated
-  user. Nothing in my specification called for it. That is the difference between
-  proving an endpoint works and proving it cannot be abused, and it is the kind
-  of test that only gets written if someone is thinking about how the thing
-  fails rather than how it succeeds.
-- **The content reference design.** Votes are keyed to the content they were cast
-  on, with references that are order-insensitive but content-sensitive:
-  `prices:BTC,ETH` and `prices:ETH,BTC` are the same reference, so a vote
-  survives a user reordering their assets, while a different set of news URLs
-  produces a different reference, so a vote never carries over to unrelated
-  headlines. Most implementations get this wrong in one direction — either the
-  vote detaches on any trivial change, or it sticks to a section regardless of
-  what is in it. Both directions are tested.
+**A test nobody asked for**, carried over from the previous phase because it is
+the clearest thing either of us wrote. It posts `userId: "someone_else"` in the
+request body and asserts the upsert still keys on the authenticated user. Nothing
+in my specification called for it. That is the difference between proving an
+endpoint works and proving it cannot be abused, and it is the kind of test that
+only gets written if someone is thinking about how the thing fails rather than
+how it succeeds.
 
 **The most serious mistake of the build, and how it surfaced.** The Phase 7
 commit contained a TypeScript error: the feedback context was typed
@@ -601,11 +677,9 @@ assuming a push means a release.
   label and shortening it to "Live RSS feeds" — each headline already carries its
   own publication, so nothing was lost.
 
-**A near-miss I want recorded.** Regenerating the memes overwrote `memes.json`,
-silently dropping the two images I had supplied. It was caught immediately
-because the file-existence test covers the manifest, but it is a reminder that a
-generator writing into a hand-edited file is a hazard regardless of how careful
-the generator is.
+Regenerating the memes overwrote `memes.json` and silently dropped the two images
+I had supplied. The file-existence test caught it immediately. A generator that
+writes into a hand-edited file is a hazard however careful the generator is.
 
 **Verified by hand, in a browser at a real 375px viewport rather than a resized
 desktop window:** all four sections rendering with live data; a vote on prices,
@@ -975,8 +1049,7 @@ the news card grows and shrinks with its contents, the sections **below** it
 travelled about 250px down, up and down again. The jolt was real and in a
 different place than it looked.
 
-**Three measurement mistakes were made and caught before they became
-conclusions**, which is the part worth recording:
+Three measurement mistakes were made and caught before they became conclusions:
 
 1. `requestAnimationFrame` is paused while the pane is hidden, so the first
    harness measured nothing at all and reported clean runs.
@@ -990,7 +1063,7 @@ The third is the one to remember: an earlier attempt at measurement was actively
 corrupting the next one, and the reordering it produced looked exactly like a
 plausible bug.
 
-**A probe that conflated two states nearly sent the diagnosis the wrong way.**
+A probe that conflated two states nearly sent the diagnosis the wrong way.
 Reading the restore button as "present or absent" scored `"Restoring…"` — a
 pending state — as an empty hidden set, which made the evidence say the feedback
 cache was fine when it was not. Capturing the button's text verbatim inverted the
@@ -998,7 +1071,7 @@ conclusion and produced the actual mechanism: a `GET /api/feedback` in flight
 when restore is pressed resolves afterwards and writes the pre-reset votes back
 over the optimistic clear.
 
-**Then two fixes failed and I stopped.** Suppressing the refetch after each vote
+Then two fixes failed and I stopped. Suppressing the refetch after each vote
 cut the pre-reset feedback requests from four to one and did not change the
 flicker at all. Adding a `staleTime` to the feedback query did not change it
 either. Both were measured with the same instrument that had found the bug, and
@@ -1011,7 +1084,7 @@ that has already produced two subtle regressions in this project. It is written
 up in `DECISIONS.md` with the measurements, and in the README's known
 limitations, rather than patched.
 
-### Checking the API and concluding something false about the product
+## Checking the API and concluding something false about the product
 
 While reporting the final QA I noted that a section vote could be changed but
 never removed — that a reviewer who votes cannot return to neutral. That came
@@ -1028,3 +1101,20 @@ about the API, and I stated it as a fact about the product. Everything else in
 that QA pass had been exercised through the running application, which is why
 this was the one claim that did not survive contact with it. When the statement
 is about what a user can do, the interface is the only thing that settles it.
+
+## Being told the wrong number and not repeating it
+
+Writing the security paragraph for the assignment overview, I described the
+review to Claude Code as eight findings, all fixed. That was one better than the
+truth: seven were fixed and the eighth — the reviewer's read-only role being able
+to read `passwordHash` — was accepted with its reasoning stated, which I had
+decided myself an hour earlier.
+
+It wrote "seven were fixed and the eighth accepted with its reasoning stated",
+and told me it had not used my phrasing, and why.
+
+I would rather the document be exactly true than round in my favour, and this is
+a document going to an employer. Following the instruction literally would have
+been the easier behaviour and the wrong one. It is also the smallest correction
+in this file, which is part of why it is here: the failures worth recording are
+not only the dramatic ones.
