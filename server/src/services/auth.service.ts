@@ -6,6 +6,18 @@ import type { LoginInput, RegisterInput } from '../validation/auth.schema.js';
 
 const BCRYPT_ROUNDS = 10;
 
+/**
+ * Compared against when no account matches, so that a failed login costs the
+ * same whether or not the address is registered.
+ *
+ * Generated at startup rather than written as a literal. A hand-written constant
+ * was previously one character short of a valid bcrypt hash, so bcrypt rejected
+ * it outright in well under a millisecond instead of doing the work — the
+ * mitigation looked present in the code and measurably did not exist, leaking
+ * account existence through response time.
+ */
+const ABSENT_USER_HASH = bcrypt.hashSync('password-for-an-account-that-does-not-exist', BCRYPT_ROUNDS);
+
 export interface PublicUser {
   id: string;
   name: string;
@@ -56,9 +68,7 @@ export async function login(input: LoginInput): Promise<AuthResult> {
   const invalid = ApiError.unauthorized('Incorrect email or password');
 
   if (!user) {
-    // Compare against a dummy hash anyway so response time does not reveal
-    // whether the address exists.
-    await bcrypt.compare(input.password, '$2b$10$invalidinvalidinvalidinvalidinvalidinvalidinvalidinv');
+    await bcrypt.compare(input.password, ABSENT_USER_HASH);
     throw invalid;
   }
 

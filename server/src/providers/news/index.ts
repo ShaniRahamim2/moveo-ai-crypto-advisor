@@ -6,6 +6,7 @@ import type { NewsItem, NewsProvider, ProviderResult } from '../types.js';
 import { CryptoPanicProvider } from './cryptopanic.provider.js';
 import { RssNewsProvider } from './rss.provider.js';
 import { getStaticNews } from './static.news.js';
+import { isSafeHttpUrl } from './url.js';
 
 const CACHE_TTL_MS = 120_000;
 const MAX_ITEMS = 6;
@@ -140,7 +141,7 @@ export class LayeredNewsProvider implements NewsProvider {
     const seen = new Set<string>();
 
     const fresh = items.filter((item) => {
-      if (!item.url || seen.has(item.url)) return false;
+      if (!item.url || !isSafeHttpUrl(item.url) || seen.has(item.url)) return false;
       seen.add(item.url);
       return new Date(item.publishedAt).getTime() >= cutoff;
     });

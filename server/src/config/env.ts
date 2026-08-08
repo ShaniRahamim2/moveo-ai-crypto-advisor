@@ -6,7 +6,9 @@ const schema = z.object({
   PORT: z.coerce.number().int().positive().default(4000),
   CLIENT_ORIGIN: z.string().default('http://localhost:5173'),
   DATABASE_URL: z.string().min(1),
-  JWT_SECRET: z.string().min(16, 'JWT_SECRET must be at least 16 characters'),
+  // 32 characters, not 16: HS256 keys shorter than the hash output weaken the
+  // signature. Production is a 64-character hex string from `openssl rand -hex 32`.
+  JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
   JWT_EXPIRES_IN: z.string().default('7d'),
 });
 

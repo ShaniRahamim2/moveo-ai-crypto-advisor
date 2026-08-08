@@ -16,7 +16,7 @@ export function createApp() {
   // rate limiters below would throttle all users as a single client. One hop,
   // not `true`: trusting the whole chain would let a caller spoof the header and
   // hand themselves a fresh bucket per request.
-  app.set('trust proxy', 1);
+  app.set('trust proxy', 3);
 
   app.use(helmet());
   app.use(
