@@ -727,3 +727,38 @@ about whether the platform underneath behaves as assumed. Two of the three worst
 problems in this build came from that gap: shared-IP rate limiting on one
 provider, and cold-start behaviour on the database. Neither is a coding mistake,
 and neither would have been found by writing more tests.
+
+---
+
+## A verification method that hid the bug it was meant to catch
+
+The "Show me less like this" control persisted correctly but did not remove the
+article from the screen until the page was reloaded. To a user it looked like the
+button did nothing.
+
+The verification I had run was: click the control, **reload**, assert the article
+is gone. It passed, and it was worthless for this purpose. The reload is exactly
+the step that repaints from the server, so it can only ever prove persistence —
+it structurally cannot see a missing optimistic update. The right check is to
+click and then assert without reloading, which is what the developer did by
+simply using the app.
+
+The same gap existed in the meme section and I had reported it as working. The
+hide *appeared* to take effect because the code advanced the index to the next
+meme, so something visibly changed. The hidden meme was still in the deck, and
+browsing back would have shown it again. One mechanism, two different-looking
+symptoms, and the one that looked fine was the more misleading of the two.
+
+**Cause.** The vote mutation updates the `feedback` query cache optimistically,
+but both lists render from the `dashboard` query, which was untouched. Fixed by
+deriving the hidden sets from the feedback cache and filtering both lists there,
+so a hide takes effect on click and still agrees with the server after a reload.
+
+**Re-verified without reloading:** the article disappeared within 250ms of the
+click, far below a round trip; hiding a meme dropped the mounted deck from 14 to
+13 immediately, and walking all 13 forward never showed the hidden one again.
+
+The general lesson is narrower than "test more" and worth stating precisely: a
+check that performs a state-resetting action between the interaction and the
+assertion can only observe persisted state. If the thing under test is the
+interface's immediate response, the reload has to come out of the test.
