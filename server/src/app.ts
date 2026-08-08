@@ -11,11 +11,15 @@ export function createApp() {
 
   app.disable('x-powered-by');
 
-  // Render terminates TLS at its own proxy and forwards the caller in
-  // X-Forwarded-For. Without this, req.ip is the proxy for every request and the
-  // rate limiters below would throttle all users as a single client. One hop,
-  // not `true`: trusting the whole chain would let a caller spoof the header and
-  // hand themselves a fresh bucket per request.
+  // Three hops sit in front of the app in production — Cloudflare's edge and two
+  // inside Render — so X-Forwarded-For arrives as `<client>, <cloudflare>,
+  // <render>`. The count was measured against the deployed service rather than
+  // assumed: at one hop req.ip resolved to Render's internal 10.x address, which
+  // would have keyed every user in the world into a single rate-limit bucket.
+  //
+  // A fixed count rather than `true` is what makes this spoof-resistant: a forged
+  // X-Forwarded-For is prepended to the chain, so counting from the right steps
+  // straight past it. Verified by sending one.
   app.set('trust proxy', 3);
 
   app.use(helmet());

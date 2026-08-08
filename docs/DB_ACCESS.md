@@ -2,23 +2,26 @@
 
 The application database is PostgreSQL, hosted on Neon (`eu-central-1`).
 
-A dedicated `moveo_readonly` role exists for review. **Credentials are not in this
-repository** — they are in the submission email. The application's owner role is
-never shared.
+A dedicated `moveo_readonly` role exists for review. **The host and password are
+not in this repository** — they are in the submission email. This repository is
+public, and publishing the endpoint would name a target without giving a reviewer
+anything they do not already receive. The database name is Neon's default,
+`neondb`, and appears in the grant script; it identifies nothing on its own. The
+application's owner role is never shared.
 
 ## Connecting
 
-Any PostgreSQL client works. With `psql`:
+Any PostgreSQL client works. Substitute the values from the submission email:
 
 ```bash
-psql "postgresql://moveo_readonly:<password>@ep-plain-star-agcn8qkj-pooler.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require"
+psql "postgresql://moveo_readonly:<password>@<host>/neondb?sslmode=require"
 ```
 
 GUI clients (TablePlus, DBeaver, pgAdmin) need:
 
 | Setting | Value |
 |---|---|
-| Host | `ep-plain-star-agcn8qkj-pooler.c-2.eu-central-1.aws.neon.tech` |
+| Host | in the submission email |
 | Port | `5432` |
 | Database | `neondb` |
 | User | `moveo_readonly` |
@@ -43,6 +46,10 @@ Verified by connecting as the role and attempting each operation:
 
 `ALTER DEFAULT PRIVILEGES` is set, so tables added by later migrations are
 readable by the role without a further grant.
+
+Read access to `users` includes `passwordHash`. That is inherent to granting
+database access rather than an oversight: the column holds bcrypt hashes at cost
+10, not recoverable passwords. The demo account passwords are used nowhere else.
 
 ## Schema
 
