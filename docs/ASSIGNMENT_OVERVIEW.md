@@ -42,6 +42,13 @@ Two seeded accounts make this checkable in a minute: the demo account above
 (BTC/ETH, HODLer, News + Charts) and `daytrader@cryptoadvisor.app`, same password
 (SOL/DOGE, Day Trader, Social + Fun). Same code, visibly different dashboards.
 
+**A decision worth naming.** The strongest evidence that feedback matters is that
+it does something visible. Storing a vote "for future model improvement" is a
+promise; hiding a meme the moment it is rated is a demonstration. I made that
+split deliberately — the two sections where an immediate action is honest act
+immediately, and the two where it would be a lie say only that the vote was
+recorded.
+
 ## Feedback
 
 Votes are stored with a snapshot of the personalization context they were cast
@@ -55,9 +62,8 @@ model. None is trained today.
 
 ## Stack and reliability
 
-React + TypeScript + Vite + Tailwind; Node + Express + TypeScript; PostgreSQL via
-Prisma on Neon; JWT with bcrypt; 142 tests in Vitest and Supertest. Deployed on
-Vercel and Render.
+React + TypeScript throughout, Express and Prisma on Neon Postgres, JWT with
+bcrypt, 170 tests. Deployed on Vercel and Render.
 
 Every external integration sits behind an interface with an explicit timeout, 429
 handling and a fallback, injectable so failure paths are genuinely testable.
@@ -68,6 +74,11 @@ falls back through live RSS to clearly-labelled sample content; the AI insight i
 cached daily to stay inside a free tier of roughly 50 requests and degrades to a
 summary built from real market data, labelled as written without AI. Fallback
 content is never presented as live.
+
+A focused security review before submission produced eight findings — among them
+a timing-attack mitigation the code claimed but did not deliver, and
+authentication with no rate limiting at all; seven were fixed and the eighth
+accepted with its reasoning stated.
 
 All free tiers, so the backend sleeps when idle and the first load can take up to
 a minute — the interface says so rather than showing a blank screen. A read-only

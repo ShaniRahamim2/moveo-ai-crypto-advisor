@@ -348,6 +348,12 @@ of the document less trustworthy.
   targeted fixes were tried and measured, neither removed it, and the mechanism
   that keeps a stale response in flight is not fully identified. It is documented
   rather than patched speculatively this close to submission.
+- **A local server points at the production database.** There is one
+  `DATABASE_URL` and no separate development database, so running the backend
+  locally makes every click a production write. This caught us twice during
+  testing — automated interaction against `localhost` left hidden articles on the
+  seeded demo account, which a reviewer would have seen. Anyone working on this
+  should point `DATABASE_URL` at their own Neon branch first.
 - **Authentication is rate limited to 10 attempts per 15 minutes per IP.** That
   is deliberate, but reviewers behind a shared address should know it exists
   before reading a 429 as a broken login.

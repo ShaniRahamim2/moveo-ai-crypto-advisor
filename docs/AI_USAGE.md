@@ -1010,3 +1010,21 @@ third attempt would have been guessing against a deadline in the caching layer
 that has already produced two subtle regressions in this project. It is written
 up in `DECISIONS.md` with the measurements, and in the README's known
 limitations, rather than patched.
+
+### Checking the API and concluding something false about the product
+
+While reporting the final QA I noted that a section vote could be changed but
+never removed — that a reviewer who votes cannot return to neutral. That came
+from reading the API surface: there is no delete on `/api/feedback`, only an
+upsert, and `reset-hidden` covers memes and articles rather than section votes.
+The reasoning was sound and the conclusion was wrong.
+
+I checked in the browser. The collapsed control reads "change", and using it
+returns the section to neutral — the interface exposes something the endpoint
+list does not obviously offer.
+
+The lesson is narrow and worth keeping: an API-level check answers a question
+about the API, and I stated it as a fact about the product. Everything else in
+that QA pass had been exercised through the running application, which is why
+this was the one claim that did not survive contact with it. When the statement
+is about what a user can do, the interface is the only thing that settles it.
