@@ -2,18 +2,21 @@
 
 ## Summary
 
-Claude Code wrote the great majority of the code in this repository. I set the
-constraints, made the trade-offs, checked claims against evidence, and overruled
-it where I disagreed. The detail below is long because it is a working record;
-this section is the short version.
+Claude Code was the primary implementer and wrote the great majority of the code
+in this repository. My role was direction, review, correction and verification:
+setting the constraints, deciding the trade-offs, checking claims against
+evidence, and overruling the model where I disagreed with it. I did not review
+every line with equal attention — this document is explicit about what I checked
+closely and what I accepted on the strength of a passing test or a working
+deployment.
 
-Four constraints were fixed before any code existed, because they are the
-expensive things to change later: a strict P0/P1/P2 priority order with an
-instruction to cut from the bottom and report every cut; a failing provider
-degrades its own dashboard section and never the request; every external
-integration behind an injectable interface, because that is the only way the
-required 429 and timeout tests can exist without live calls; and daily caching
-of the AI insight as a hard requirement rather than an optimisation.
+Claude Code worked from a written specification I authored and iterated on before
+any code existed — a build plan covering scope priorities, architecture, the data
+model, provider constraints, testing requirements, commit discipline and a
+phase-by-phase time budget. That specification was itself developed with AI
+assistance. It lives in the repository as [`CLAUDE.md`](../CLAUDE.md), unedited
+except for an amendments section recording decisions made after the build
+started. The constraints it fixed up front are set out below.
 
 The decisions where I overruled the model matter more than the ones I accepted.
 It proposed shipping curated static news after CryptoPanic proved unreachable —
@@ -33,26 +36,6 @@ correctly written, could never run — it read an in-process cache that only fil
 after a success that never happened. The first taught that a green suite is not
 a green build and a push is not a release; the second, that unreachable code is
 worse than absent code, because it reads as protection.
-
-The phase-by-phase record follows, including the mistakes.
-
-## How this project was built
-
-This project was built with Claude Code as the primary implementer. It wrote the
-great majority of the code in this repository.
-
-It worked from a written specification I authored and iterated on before any code
-existed — a build plan covering scope priorities, architecture, the data model,
-provider constraints, testing requirements, commit discipline and a phase-by-phase
-time budget. That specification was itself developed with AI assistance. It lives
-in the repository as [`CLAUDE.md`](../CLAUDE.md), unedited except for an
-amendments section recording decisions made after the build started.
-
-My role was direction, review, correction and verification: setting the
-constraints, deciding the trade-offs, checking claims against evidence, and
-overruling the model where I disagreed with it. I did not review every line with
-equal attention — the section below is explicit about what I checked closely and
-what I accepted on the strength of a passing test or a working deployment.
 
 This document is written as the work happens, one entry per phase. It is a record
 of what actually occurred, including the mistakes.

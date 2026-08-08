@@ -40,14 +40,14 @@ Two seeded accounts make this checkable in a minute: the demo account above
 (BTC/ETH, HODLer, News + Charts) and `daytrader@cryptoadvisor.app`, same password
 (SOL/DOGE, Day Trader, Social + Fun). Same code, visibly different dashboards.
 
+## Feedback
+
 **A decision worth naming.** The strongest evidence that feedback matters is that
 it does something visible. Storing a vote "for future model improvement" is a
 promise; hiding a meme the moment it is rated is a demonstration. I made that
 split deliberately — the two sections where an immediate action is honest act
 immediately, and the two where it would be a lie say only that the vote was
 recorded.
-
-## Feedback
 
 Votes are stored with a snapshot of the personalization context they were cast
 in, keyed so changing a vote updates the row rather than accumulating duplicates,
@@ -81,3 +81,7 @@ accepted with its reasoning stated.
 All free tiers, so the backend sleeps when idle and the first load can take up to
 a minute — the interface says so rather than showing a blank screen. A read-only
 database role is available for review.
+
+The build was AI-assisted, working from a written specification I authored and
+iterated on; the collaboration is recorded in full, including the mistakes, in
+[`AI_USAGE.md`](./AI_USAGE.md).
