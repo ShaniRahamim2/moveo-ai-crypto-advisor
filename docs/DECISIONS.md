@@ -39,7 +39,7 @@ omission.
 
 **A meme thumbs-down doubles as "hide".** This needed no schema change: the
 existing `UNIQUE (userId, sectionType, contentRef)` already stores exactly one
-row per user per item, so a `DOWN` vote *is* the hidden set. It also means the
+row per user per item, so a `DOWN` vote _is_ the hidden set. It also means the
 hidden state persists exactly the way votes do, by construction rather than by a
 second mechanism that could drift.
 
@@ -67,7 +67,7 @@ CoinGecko quota harder than a shorter cooldown would.
 **The `(cached)` label was dropped from source lines.** A cache hit is still live
 data under 90 seconds old, and the timestamp beside it already conveys age. The
 genuinely different case — the persisted snapshot — has its own `(saved)` label
-*plus* an explicit notice. A third distinction earned nothing and made the line
+_plus_ an explicit notice. A third distinction earned nothing and made the line
 long enough to truncate on a phone.
 
 **The insight summary and full text come from one model call, never two.** The

@@ -4,7 +4,7 @@ Legend: `[ ]` not started · `[x]` done and verified · `[~]` partially done · 
 
 Nothing is marked `[x]` until the behavior has been exercised and observed. Updated after every phase.
 
-Last updated: end of Phase 9 (documentation).
+Last updated: after the post-documentation UI batches. All code and docs pushed.
 
 All routes are real. Nothing in the app is a placeholder.
 
@@ -17,14 +17,14 @@ All routes are real. Nothing in the app is a placeholder.
 - [x] 5. Meme changes when the dashboard refreshes — verified: meme-001 to meme-005 on one refresh, previous never repeated
 - [x] 6. Deployed frontend + backend + managed Postgres, publicly reachable — Vercel + Render + Neon, verified in production
 - [x] 7. Public GitHub repo, no secrets committed, readable commit history — repo created public and verified in Phase 0 (not a fork, not a template); secret scan repeated at Phase 10
-- [x] 8. `README.md`, `docs/ASSIGNMENT_OVERVIEW.md`, `docs/AI_USAGE.md`, `docs/FEEDBACK_MODEL_IMPROVEMENT.md` — all four written; screenshots outstanding
+- [~] 8. `README.md`, `docs/ASSIGNMENT_OVERVIEW.md` (611 words, one page), `docs/AI_USAGE.md`, `docs/FEEDBACK_MODEL_IMPROVEMENT.md`, plus `docs/DECISIONS.md` and `docs/DB_ACCESS.md` — all written. **Screenshots outstanding: the developer must supply them, the model cannot write binary files**
 - [x] 9. Read-only DB access path for the reviewer — `moveo_readonly` created, connected to, reads allowed and all writes rejected
 
 ## P1 — what makes this stand out
 
 - [x] 10. Real, observable personalization along all three dimensions — visible on screen and verified in production
 - [x] 11. Provider abstractions with timeout + 429 + failure handling — including the isolation test: one provider fails, other three still `ok`
-- [x] 12. API tests including explicit 429 and timeout tests — 122 tests; the timeout test really aborts at 5001ms
+- [x] 12. API tests including explicit 429 and timeout tests — 152 tests; the timeout test really aborts at 5001ms
 - [x] 13. Editable preferences after onboarding — `/preferences` reuses the onboarding form, pre-filled
 - [x] 14. Loading/skeleton, empty, and partial-error states; responsive layout — checked at a real 375px viewport, not a resized desktop
 - [x] 15. Seeded demo account so the reviewer can log in without signing up
@@ -73,8 +73,35 @@ request, and the sparkline is hand-rolled inline SVG with no charting library.
 - [x] "Not sure? Start with a popular mix" button prefilling BTC + ETH + SOL, HODLer, Market News — verified editable after prefill
 - [x] Decided against demographic/background questions — the assignment specifies three questions and the data would feed nothing
 
+## Interface work completed after Phase 9
+
+- [x] Thumbs icons with visible labels, replacing the ▲▼ that read as pagination
+- [x] Meme browsing, hide-on-thumbs-down, and an explicit reset
+- [x] Per-article "Show me more / less like this" with instant dismissal
+- [x] Section-level vote removed from Market News (per-article instead)
+- [x] Coin Prices pinned to first or second across all 15 preference combinations
+- [x] News link affordance, one-line description cut at a sentence boundary
+- [x] AI insight one-sentence summary with Read more, from a single model call
+- [x] Password visibility toggle on login and signup
+- [x] Asset cap raised from 8 to 12
+- [x] Time-aware, title-cased greeting computed client-side
+- [x] Coin Prices refresh control, 90s cooldown matched to the cache TTL
+- [x] Collapsible sections, state persisted in localStorage, votes still reachable
+- [x] Meme caption above the image, arrows bottom-centre, section-specific tooltips
+- [x] Section meta lines shortened; `(cached)` suffix dropped
+
 ## Resolved
 
+- **AI Insight rendered raw JSON.** The model reply was truncated by
+  `max_tokens: 600`, so `JSON.parse` failed and the fallback printed the payload
+  verbatim. Fixed on three levels: a larger token budget, a parser that survives
+  truncation by extracting fields with an optional closing quote, and a last
+  resort that strips JSON scaffolding. Cached rows are re-parsed on read so an
+  already-stored payload cannot render badly. Eight malformed shapes are covered
+  by tests.
+- **Hidden content did not update the UI until a reload**, in both directions.
+  Dismissing an article left it on screen; restoring hidden articles or memes
+  did nothing until a refresh. Both now update immediately.
 - **Coin Prices returned an empty section in production.** Keyless CoinGecko
   rate limits per IP and shares that quota with every caller on the same IP;
   Render's shared egress was exhausted, so every call returned 429 while the same
@@ -92,12 +119,27 @@ request, and the sparkline is hand-rolled inline SVG with no charting library.
   correct rather than broken: votes are attached to the specific content voted
   on, and the meme is required to change on every refresh, so the new meme has no
   vote yet. The other three sections keep their votes across a hard reload.
+- The demo account's test feedback has been cleared, so a reviewer starts
+  neutral. Section votes, hidden memes and dismissed articles are all empty.
 - The Phase 7 commit broke the production build (a Prisma JSON type error) and
   was not caught, because lint and tests pass without type-checking. Production
   served a stale build until it was found and fixed in Phase 8. `npm run build`
   now runs before every commit.
 
+## Outstanding before submission
+
+1. **Screenshots** — developer to supply; see `docs/screenshots/`.
+2. **Phase 10: final QA on production** — full end-to-end pass on the live URL,
+   the two-profile personalization comparison, a git-history secret scan, and a
+   check that the read-only database role still works.
+3. **`docs/AI_USAGE.md`** — a final pass is expected; it is current through every
+   phase and both production incidents.
+
+The three P2 items are untouched and none block submission.
+
 ## Where this stopped, and what comes first tomorrow
+
+_(The section below described the end of Phase 8 and is kept for the record.)_
 
 **State at the end of Phase 8.** The application is feature-complete against P0
 except for documentation. Everything is committed and pushed; `main` and
