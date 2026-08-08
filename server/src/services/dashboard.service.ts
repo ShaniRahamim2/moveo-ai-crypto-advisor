@@ -6,7 +6,6 @@ import { StaticMemeProvider } from '../providers/meme/meme.provider.js';
 import type {
   CoinPrice,
   MarketDataProvider,
-  Meme,
   MemeProvider,
   NewsItem,
   NewsProvider,
@@ -16,6 +15,8 @@ import type {
 import { InsightService, buildContextHash, type Insight } from './insight.service.js';
 import { getPersonalizationContext } from './preferences.service.js';
 import { refFor } from './contentRef.js';
+import { getHiddenContent } from './hidden.service.js';
+import type { MemeDeck } from '../providers/meme/meme.provider.js';
 import type { PersonalizationContext } from './personalization.js';
 
 export interface DashboardSection<T = unknown> {
@@ -32,6 +33,7 @@ export interface DashboardSection<T = unknown> {
 export interface Dashboard {
   generatedAt: string;
   order: SectionType[];
+  hiddenCounts: { memes: number; articles: number };
   personalization: {
     selectedAssets: string[];
     investorType: PersonalizationContext['investorType'];
@@ -84,22 +86,41 @@ export class DashboardService {
   ) {}
 
   async build(userId: string, previousMemeId?: string): Promise<Dashboard> {
-    const context = await getPersonalizationContext(userId);
+    const [context, hidden] = await Promise.all([
+      getPersonalizationContext(userId),
+      getHiddenContent(userId),
+    ]);
+
+    const emptyDeck: MemeDeck = {
+      current: { id: 'none', imageUrl: '', caption: '', subcaption: '', altText: '' },
+      deck: [],
+      hiddenCount: 0,
+      totalCount: 0,
+      exhausted: false,
+    };
 
     // Independent sections run concurrently; the insight needs their output.
-    const [prices, news, meme] = await Promise.all([
+    const [prices, rawNews, meme] = await Promise.all([
       settle<CoinPrice[]>('COIN_PRICES', [], () => this.market.getPrices(context)),
       settle<NewsItem[]>('MARKET_NEWS', [], () => this.news.getNews(context)),
-      settle<Meme>(
+      settle<MemeDeck>(
         'MEME',
-        { id: 'none', imageUrl: '', caption: '', subcaption: '', altText: '' },
-        () => this.meme.getMeme(previousMemeId),
+        emptyDeck,
+        () => this.meme.getMeme(previousMemeId, hidden.memeIds) as Promise<ProviderResult<MemeDeck>>,
       ),
     ]);
+
+    // Dismissed articles are removed here rather than in the provider, so the
+    // provider stays user-agnostic and cacheable across accounts.
+    const news = {
+      ...rawNews,
+      data: rawNews.data.filter((item) => !hidden.articleUrls.has(item.url)),
+    };
 
     const insight = await settle<Insight>(
       'AI_INSIGHT',
       {
+        summary: null,
         text: 'The daily insight is unavailable right now.',
         disclaimer: 'AI-generated insight for informational purposes only. Not financial advice.',
         generatedAt: new Date().toISOString(),
@@ -114,12 +135,13 @@ export class DashboardService {
       COIN_PRICES: this.toSection('COIN_PRICES', prices, refFor('COIN_PRICES', { prices: prices.data })),
       MARKET_NEWS: this.toSection('MARKET_NEWS', news, refFor('MARKET_NEWS', { news: news.data })),
       AI_INSIGHT: this.toSection('AI_INSIGHT', insight, refFor('AI_INSIGHT', { contextHash })),
-      MEME: this.toSection('MEME', meme, refFor('MEME', { meme: meme.data })),
+      MEME: this.toSection('MEME', meme, refFor('MEME', { meme: meme.data.current })),
     };
 
     return {
       generatedAt: new Date().toISOString(),
       order: context.sectionOrder,
+      hiddenCounts: { memes: hidden.memeIds.size, articles: hidden.articleUrls.size },
       personalization: {
         selectedAssets: context.selectedAssets,
         investorType: context.investorType,
@@ -147,4 +169,23 @@ export class DashboardService {
       data: result.data,
     };
   }
+}
+
+export async function getPricesOnly(
+  userId: string,
+  market: MarketDataProvider = new CoinGeckoProvider(),
+): Promise<DashboardSection<CoinPrice[]>> {
+  const context = await getPersonalizationContext(userId);
+  const result = await settle<CoinPrice[]>('COIN_PRICES', [], () => market.getPrices(context));
+
+  return {
+    type: 'COIN_PRICES',
+    title: TITLES.COIN_PRICES,
+    status: result.status,
+    contentRef: refFor('COIN_PRICES', { prices: result.data }),
+    source: result.source,
+    fetchedAt: result.fetchedAt,
+    ...(result.notice ? { notice: result.notice } : {}),
+    data: result.data,
+  };
 }

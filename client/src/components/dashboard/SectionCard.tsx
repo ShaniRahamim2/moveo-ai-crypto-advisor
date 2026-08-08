@@ -8,9 +8,17 @@ interface SectionCardProps {
   children: ReactNode;
   /** The AI section is visually separated so generated text is never mistaken for data. */
   generated?: boolean;
+  downLabel?: string;
+  onVoted?: (vote: 'UP' | 'DOWN') => void;
 }
 
-export function SectionCard({ section, children, generated = false }: SectionCardProps) {
+export function SectionCard({
+  section,
+  children,
+  generated = false,
+  downLabel,
+  onVoted,
+}: SectionCardProps) {
   return (
     <section
       aria-labelledby={`section-${section.type}`}
@@ -18,7 +26,7 @@ export function SectionCard({ section, children, generated = false }: SectionCar
         generated ? 'border-accent/35 bg-accent/[0.04]' : 'border-edge bg-raised'
       }`}
     >
-      <header className="mb-4 flex items-start justify-between gap-3">
+      <header className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 flex-1">
           <h2 id={`section-${section.type}`} className="text-sm font-semibold text-slate-200">
             {section.title}
@@ -29,11 +37,13 @@ export function SectionCard({ section, children, generated = false }: SectionCar
           </p>
         </div>
 
-        <div className="shrink-0">
+        <div className="shrink-0 sm:self-start">
           <VoteButtons
             sectionType={section.type}
             contentRef={section.contentRef}
             label={section.title}
+            {...(downLabel ? { downLabel } : {})}
+            {...(onVoted ? { onVoted } : {})}
           />
         </div>
       </header>

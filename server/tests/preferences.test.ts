@@ -61,7 +61,7 @@ describe('GET /api/preferences/options', () => {
     expect(res.status).toBe(200);
     expect(res.body.coins.length).toBeGreaterThanOrEqual(40);
     expect(res.body.coins[0]).toMatchObject({ symbol: 'BTC', coingeckoId: 'bitcoin' });
-    expect(res.body.maxAssets).toBe(8);
+    expect(res.body.maxAssets).toBe(12);
     expect(res.body.contentPreferences.map((c: { value: string }) => c.value)).toEqual([
       'MARKET_NEWS',
       'CHARTS',
@@ -101,13 +101,15 @@ describe('PUT /api/preferences', () => {
     expect(prismaMock.userPreference.upsert).not.toHaveBeenCalled();
   });
 
-  it('rejects more than eight assets', async () => {
+  it('rejects more than twelve assets', async () => {
     const res = await request(app)
       .put('/api/preferences')
       .set(auth)
       .send({
         ...validBody,
-        selectedAssets: ['BTC', 'ETH', 'SOL', 'XRP', 'DOGE', 'ADA', 'TRX', 'LINK', 'AVAX'],
+        selectedAssets: [
+          'BTC', 'ETH', 'SOL', 'XRP', 'DOGE', 'ADA', 'TRX', 'LINK', 'AVAX', 'DOT', 'BCH', 'XLM', 'HBAR',
+        ],
       });
 
     expect(res.status).toBe(400);
@@ -148,6 +150,23 @@ describe('PUT /api/preferences', () => {
       .send({ ...validBody, contentPreferences: [] });
 
     expect(res.status).toBe(400);
+  });
+
+  it('accepts twelve assets', async () => {
+    prismaMock.userPreference.upsert.mockResolvedValue(stored);
+    prismaMock.user.update.mockResolvedValue({ id: 'user_1' });
+
+    const res = await request(app)
+      .put('/api/preferences')
+      .set(auth)
+      .send({
+        ...validBody,
+        selectedAssets: [
+          'BTC', 'ETH', 'SOL', 'XRP', 'DOGE', 'ADA', 'TRX', 'LINK', 'AVAX', 'DOT', 'BCH', 'XLM',
+        ],
+      });
+
+    expect(res.status).toBe(200);
   });
 
   it('accepts lowercase symbols and stores them uppercased', async () => {

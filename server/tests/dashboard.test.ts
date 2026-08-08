@@ -35,11 +35,13 @@ const meme = {
   altText: 'alt',
 };
 
+const memeDeck = { current: meme, deck: [meme], hiddenCount: 0, totalCount: 1, exhausted: false };
+
 function providers(overrides: Record<string, unknown> = {}) {
   return {
     market: { name: 'market', getPrices: vi.fn().mockResolvedValue(okResult(prices)) },
     news: { name: 'news', getNews: vi.fn().mockResolvedValue(okResult(news)) },
-    meme: { name: 'meme', getMeme: vi.fn().mockResolvedValue(okResult(meme)) },
+    meme: { name: 'meme', getMeme: vi.fn().mockResolvedValue(okResult(memeDeck)) },
     insight: {
       getInsight: vi
         .fn()
@@ -209,7 +211,7 @@ describe('DashboardService', () => {
     const p = providers();
     await build(p, 'meme-003');
 
-    expect(p.meme.getMeme).toHaveBeenCalledWith('meme-003');
+    expect(p.meme.getMeme).toHaveBeenCalledWith('meme-003', expect.any(Set));
   });
 
   it('reports the personalization actually applied', async () => {
@@ -227,5 +229,64 @@ describe('DashboardService', () => {
     const [, passedPrices, passedNews] = p.insight.getInsight.mock.calls[0]!;
     expect(passedPrices).toEqual(prices);
     expect(passedNews).toEqual(news);
+  });
+});
+
+describe('hidden content', () => {
+  it('removes dismissed articles from the news section', async () => {
+    const many = [
+      { title: 'A', url: 'https://example.com/a', source: 's', publishedAt: new Date().toISOString(), assets: [] },
+      { title: 'B', url: 'https://example.com/b', source: 's', publishedAt: new Date().toISOString(), assets: [] },
+      { title: 'C', url: 'https://example.com/c', source: 's', publishedAt: new Date().toISOString(), assets: [] },
+    ];
+    prismaMock.feedback.findMany.mockResolvedValue([
+      { sectionType: 'MARKET_NEWS', contentRef: 'article:https://example.com/b' },
+    ]);
+
+    const dashboard = await build(
+      providers({ news: { name: 'news', getNews: vi.fn().mockResolvedValue(okResult(many)) } }),
+    );
+    const section = dashboard.sections.find((s) => s.type === 'MARKET_NEWS')!;
+
+    expect((section.data as { url: string }[]).map((i) => i.url)).toEqual([
+      'https://example.com/a',
+      'https://example.com/c',
+    ]);
+    expect(dashboard.hiddenCounts.articles).toBe(1);
+  });
+
+  it('passes hidden meme ids to the meme provider', async () => {
+    prismaMock.feedback.findMany.mockResolvedValue([
+      { sectionType: 'MEME', contentRef: 'meme:meme-001' },
+      { sectionType: 'MEME', contentRef: 'meme:meme-002' },
+    ]);
+
+    const p = providers();
+    const dashboard = await build(p);
+
+    const [, hiddenIds] = p.meme.getMeme.mock.calls[0]!;
+    expect([...(hiddenIds as Set<string>)].sort()).toEqual(['meme-001', 'meme-002']);
+    expect(dashboard.hiddenCounts.memes).toBe(2);
+  });
+
+  it('ignores section-level votes when building the hidden sets', async () => {
+    prismaMock.feedback.findMany.mockResolvedValue([
+      { sectionType: 'MARKET_NEWS', contentRef: 'news:abc123' },
+      { sectionType: 'MEME', contentRef: 'meme:meme-005' },
+    ]);
+
+    const dashboard = await build(providers());
+
+    expect(dashboard.hiddenCounts.articles).toBe(0);
+    expect(dashboard.hiddenCounts.memes).toBe(1);
+  });
+
+  it('shows everything when the hidden lookup fails', async () => {
+    prismaMock.feedback.findMany.mockRejectedValue(new Error('db down'));
+
+    const dashboard = await build(providers());
+
+    expect(dashboard.sections).toHaveLength(4);
+    expect(dashboard.hiddenCounts).toEqual({ memes: 0, articles: 0 });
   });
 });

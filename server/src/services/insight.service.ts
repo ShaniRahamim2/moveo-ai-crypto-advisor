@@ -3,7 +3,7 @@ import { prisma } from '../lib/prisma.js';
 import { logger } from '../lib/logger.js';
 import { ProviderError } from '../lib/httpClient.js';
 import { OpenRouterProvider } from '../providers/ai/openrouter.provider.js';
-import { buildFallbackInsight, clampInsight } from '../providers/ai/prompt.js';
+import { buildFallbackInsight, clampInsight, parseInsightResponse } from '../providers/ai/prompt.js';
 import type { AIProvider, InsightInput } from '../providers/ai/types.js';
 import type { PersonalizationContext } from './personalization.js';
 import type { CoinPrice, NewsItem, ProviderResult } from '../providers/types.js';
@@ -12,6 +12,8 @@ export const DISCLAIMER =
   'AI-generated insight for informational purposes only. Not financial advice.';
 
 export interface Insight {
+  /** One sentence for the collapsed view. Null when the model gave no usable summary. */
+  summary: string | null;
   text: string;
   disclaimer: string;
   generatedAt: string;
@@ -39,6 +41,26 @@ export function buildContextHash(
   });
 
   return createHash('sha256').update(material).digest('hex');
+}
+
+/**
+ * Cached rows written before the summary existed hold plain text rather than
+ * JSON. Those still have to render, so anything unparseable is treated as a
+ * full insight with no summary.
+ */
+function parseStoredInsight(stored: string): { summary: string | null; text: string } {
+  try {
+    const parsed = JSON.parse(stored) as { summary?: unknown; text?: unknown };
+    if (typeof parsed.text === 'string' && parsed.text.trim()) {
+      return {
+        summary: typeof parsed.summary === 'string' && parsed.summary.trim() ? parsed.summary : null,
+        text: parsed.text,
+      };
+    }
+  } catch {
+    // Falls through to the legacy plain-text shape.
+  }
+  return { summary: null, text: stored };
 }
 
 export class InsightService {
@@ -82,9 +104,11 @@ export class InsightService {
         throw new ProviderError('http_error', 'AI provider is not configured');
       }
 
-      const text = await this.provider.generateInsight(input);
+      const raw = await this.provider.generateInsight(input);
+      const parsed = parseInsightResponse(raw);
       const insight: Insight = {
-        text,
+        summary: parsed.summary,
+        text: clampInsight(parsed.insight),
         disclaimer: DISCLAIMER,
         generatedAt: new Date().toISOString(),
         model: this.provider.model,
@@ -118,6 +142,7 @@ export class InsightService {
       return {
         status: 'fallback',
         data: {
+          summary: null,
           text: buildFallbackInsight(input),
           disclaimer: DISCLAIMER,
           generatedAt: new Date().toISOString(),
@@ -138,10 +163,13 @@ export class InsightService {
       const row = await prisma.insightCache.findUnique({ where: { contextHash } });
       if (!row) return null;
 
+      const stored = parseStoredInsight(row.insightText);
+
       return {
+        summary: stored.summary,
         // Clamped on read as well as on write, so a row cached before the cap
         // existed cannot render an over-long insight.
-        text: clampInsight(row.insightText),
+        text: clampInsight(stored.text),
         disclaimer: DISCLAIMER,
         generatedAt: row.generatedAt.toISOString(),
         ...(row.model ? { model: row.model } : {}),
@@ -159,7 +187,7 @@ export class InsightService {
       await prisma.insightCache.create({
         data: {
           contextHash,
-          insightText: insight.text,
+          insightText: JSON.stringify({ summary: insight.summary, text: insight.text }),
           model: insight.model ?? null,
         },
       });

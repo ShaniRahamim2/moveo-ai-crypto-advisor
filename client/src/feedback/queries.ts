@@ -18,6 +18,22 @@ export function useFeedback() {
   });
 }
 
+export function useResetHidden() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (sectionType: SectionType) =>
+      apiFetch<{ restored: number }>('/api/feedback/reset-hidden', {
+        method: 'POST',
+        body: JSON.stringify({ sectionType }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['feedback'] });
+      void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
+}
+
 export function useSubmitVote() {
   const queryClient = useQueryClient();
 

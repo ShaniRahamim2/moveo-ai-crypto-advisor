@@ -10,13 +10,51 @@ function signed(value: number): string {
 
 export const SYSTEM_PROMPT = [
   'You write a short daily briefing for a crypto dashboard.',
+  'Reply with a single JSON object and nothing else, no code fences:',
+  '{"summary": "...", "insight": "..."}.',
+  'summary is ONE sentence of at most 20 words capturing the single most important point.',
+  'insight is the full briefing.',
   'Use only the figures and headlines supplied. Never invent a number, a price or an event.',
   'Never give buy, sell or hold advice, and never predict a price.',
   'Explain what the supplied data means in plain language.',
   'Do not open with filler such as "In the ever-evolving world of cryptocurrency".',
   'Do not use markdown, headings, bullet points or emoji. Plain prose only.',
-  'Write 60 to 110 words in two short paragraphs at most.',
+  'Write the insight as 60 to 110 words, two short paragraphs at most.',
 ].join(' ');
+
+export interface ParsedInsight {
+  summary: string | null;
+  insight: string;
+}
+
+/**
+ * The model is asked for JSON but cannot be relied on to return it. Anything
+ * unparseable degrades to showing the full text uncollapsed, which is strictly
+ * better than failing the section over a formatting problem.
+ */
+export function parseInsightResponse(raw: string): ParsedInsight {
+  const cleaned = raw
+    .trim()
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```$/, '')
+    .trim();
+
+  try {
+    const start = cleaned.indexOf('{');
+    const end = cleaned.lastIndexOf('}');
+    if (start === -1 || end <= start) throw new Error('no object');
+
+    const parsed = JSON.parse(cleaned.slice(start, end + 1)) as Record<string, unknown>;
+    const insight = typeof parsed.insight === 'string' ? parsed.insight.trim() : '';
+    const summary = typeof parsed.summary === 'string' ? parsed.summary.trim() : '';
+
+    if (!insight) throw new Error('no insight field');
+
+    return { summary: summary || null, insight };
+  } catch {
+    return { summary: null, insight: cleaned };
+  }
+}
 
 /**
  * The prompt carries preference data and market data only. No email, no user id,

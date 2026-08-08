@@ -7,3 +7,7 @@ export const feedbackSchema = z.object({
 });
 
 export type FeedbackInput = z.infer<typeof feedbackSchema>;
+
+export const resetHiddenSchema = z.object({
+  sectionType: z.enum(['MEME', 'MARKET_NEWS']),
+});

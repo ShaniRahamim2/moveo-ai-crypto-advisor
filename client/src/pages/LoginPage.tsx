@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { AuthCard } from '../components/AuthCard';
 import { Button } from '../components/ui/Button';
 import { TextField } from '../components/ui/TextField';
+import { PasswordField } from '../components/ui/PasswordField';
 import { useAuth } from '../auth/useAuth';
 import { ApiRequestError } from '../lib/api';
 
@@ -54,9 +55,8 @@ export function LoginPage() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
-        <TextField
+        <PasswordField
           label="Password"
-          type="password"
           autoComplete="current-password"
           required
           value={password}

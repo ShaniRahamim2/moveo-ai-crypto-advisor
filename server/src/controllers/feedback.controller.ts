@@ -3,6 +3,7 @@ import * as feedbackService from '../services/feedback.service.js';
 import { getPreferences } from '../services/preferences.service.js';
 import { getUserId } from '../middleware/requireAuth.js';
 import type { FeedbackInput } from '../validation/feedback.schema.js';
+import { resetHidden } from '../services/hidden.service.js';
 
 export async function submitVote(req: Request, res: Response, next: NextFunction) {
   try {
@@ -28,6 +29,15 @@ export async function submitVote(req: Request, res: Response, next: NextFunction
 export async function getVotes(req: Request, res: Response, next: NextFunction) {
   try {
     res.json({ feedback: await feedbackService.getVotes(getUserId(req)) });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function resetHiddenContent(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { sectionType } = req.body as { sectionType: 'MEME' | 'MARKET_NEWS' };
+    res.json(await resetHidden(getUserId(req), sectionType));
   } catch (err) {
     next(err);
   }

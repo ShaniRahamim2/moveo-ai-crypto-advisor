@@ -15,6 +15,7 @@ export interface CoinPrice {
 
 export interface NewsItem {
   title: string;
+  summary?: string;
   url: string;
   source: string;
   publishedAt: string;
@@ -31,6 +32,7 @@ export interface Meme {
 }
 
 export interface Insight {
+  summary: string | null;
   text: string;
   disclaimer: string;
   generatedAt: string;
@@ -49,9 +51,18 @@ export interface DashboardSection<T = unknown> {
   data: T;
 }
 
+export interface MemeDeck {
+  current: Meme;
+  deck: Meme[];
+  hiddenCount: number;
+  totalCount: number;
+  exhausted: boolean;
+}
+
 export interface Dashboard {
   generatedAt: string;
   order: SectionType[];
+  hiddenCounts: { memes: number; articles: number };
   personalization: {
     selectedAssets: string[];
     investorType: InvestorType;

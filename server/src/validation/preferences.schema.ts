@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { isSupportedSymbol } from '../data/coins.js';
 
-export const MAX_ASSETS = 8;
+export const MAX_ASSETS = 12;
 
 export const preferencesSchema = z.object({
   selectedAssets: z

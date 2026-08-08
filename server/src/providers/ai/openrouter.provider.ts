@@ -1,5 +1,5 @@
 import { fetchJson, ProviderError } from '../../lib/httpClient.js';
-import { buildInsightPrompt, clampInsight, SYSTEM_PROMPT } from './prompt.js';
+import { buildInsightPrompt, SYSTEM_PROMPT } from './prompt.js';
 import type { AIProvider, InsightInput } from './types.js';
 
 const TIMEOUT_MS = 12_000;
@@ -36,7 +36,7 @@ export class OpenRouterProvider implements AIProvider {
       method: 'POST',
       body: JSON.stringify({
         model: this.model,
-        max_tokens: 400,
+        max_tokens: 600,
         temperature: 0.6,
         // Reasoning models otherwise spend the whole token budget thinking and
         // return empty content.
@@ -58,6 +58,6 @@ export class OpenRouterProvider implements AIProvider {
       throw new ProviderError('parse_error', 'Model returned no content');
     }
 
-    return clampInsight(content);
+    return content;
   }
 }

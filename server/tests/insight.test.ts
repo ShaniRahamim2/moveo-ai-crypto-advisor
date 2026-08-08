@@ -7,7 +7,7 @@ const { InsightService, buildContextHash, DISCLAIMER } = await import(
   '../src/services/insight.service.js'
 );
 const { buildPersonalizationContext } = await import('../src/services/personalization.js');
-const { buildInsightPrompt, clampInsight, SYSTEM_PROMPT } = await import(
+const { buildInsightPrompt, clampInsight, parseInsightResponse, SYSTEM_PROMPT } = await import(
   '../src/providers/ai/prompt.js'
 );
 const { ProviderError } = await import('../src/lib/httpClient.js');
@@ -250,3 +250,62 @@ describe('insight length cap', () => {
     expect(result.endsWith('…')).toBe(true);
   });
 })
+
+describe('insight JSON contract', () => {
+  it('splits a well-formed JSON reply into summary and full text', () => {
+    const parsed = parseInsightResponse(
+      '{"summary": "BTC is flat at $64,783.", "insight": "Bitcoin held steady today."}',
+    );
+
+    expect(parsed.summary).toBe('BTC is flat at $64,783.');
+    expect(parsed.insight).toBe('Bitcoin held steady today.');
+  });
+
+  it('tolerates the model wrapping JSON in code fences', () => {
+    const parsed = parseInsightResponse('```json\n{"summary":"S","insight":"Full text."}\n```');
+
+    expect(parsed.summary).toBe('S');
+    expect(parsed.insight).toBe('Full text.');
+  });
+
+  it('falls back to the whole reply when the JSON is malformed', () => {
+    const parsed = parseInsightResponse('Bitcoin held steady today, with ETH following.');
+
+    expect(parsed.summary).toBeNull();
+    expect(parsed.insight).toBe('Bitcoin held steady today, with ETH following.');
+  });
+
+  it('falls back when the object is missing the insight field', () => {
+    const parsed = parseInsightResponse('{"summary": "only a summary"}');
+
+    expect(parsed.summary).toBeNull();
+    expect(parsed.insight).toContain('only a summary');
+  });
+
+  it('carries the summary through the service and caches both fields', async () => {
+    const provider = stubProvider({
+      generateInsight: vi.fn().mockResolvedValue('{"summary":"One line.","insight":"The full briefing."}'),
+    });
+
+    const result = await new InsightService(provider as never).getInsight(hodler, prices, news);
+
+    expect(result.data.summary).toBe('One line.');
+    expect(result.data.text).toBe('The full briefing.');
+
+    const cached = prismaMock.insightCache.create.mock.calls[0]![0].data.insightText as string;
+    expect(JSON.parse(cached)).toEqual({ summary: 'One line.', text: 'The full briefing.' });
+  });
+
+  it('still renders rows cached before summaries existed', async () => {
+    prismaMock.insightCache.findUnique.mockResolvedValue({
+      insightText: 'A plain-text insight written before the summary field existed.',
+      model: 'stub-model:free',
+      generatedAt: new Date(),
+    });
+
+    const result = await new InsightService(stubProvider() as never).getInsight(hodler, prices, news);
+
+    expect(result.data.summary).toBeNull();
+    expect(result.data.text).toMatch(/plain-text insight/);
+  });
+});

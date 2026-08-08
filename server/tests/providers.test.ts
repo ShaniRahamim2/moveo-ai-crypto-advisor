@@ -291,20 +291,22 @@ describe('LayeredNewsProvider', () => {
 });
 
 describe('StaticMemeProvider', () => {
-  it('returns a meme', async () => {
+  it('returns a meme and the browsable deck', async () => {
     const result = await new StaticMemeProvider().getMeme();
 
     expect(result.status).toBe('ok');
-    expect(result.data.caption).toBeTruthy();
-    expect(result.data.altText).toBeTruthy();
+    expect(result.data.current.caption).toBeTruthy();
+    expect(result.data.current.altText).toBeTruthy();
+    expect(result.data.deck.length).toBeGreaterThanOrEqual(10);
+    expect(result.data.deck.map((m) => m.id)).toContain(result.data.current.id);
   });
 
   it('never repeats the meme just shown', async () => {
     const provider = new StaticMemeProvider();
-    let previous = (await provider.getMeme()).data.id;
+    let previous = (await provider.getMeme()).data.current.id;
 
     for (let i = 0; i < 40; i++) {
-      const next = (await provider.getMeme(previous)).data.id;
+      const next = (await provider.getMeme(previous)).data.current.id;
       expect(next).not.toBe(previous);
       previous = next;
     }
@@ -317,7 +319,32 @@ describe('StaticMemeProvider', () => {
     const result = await new StaticMemeProvider(only).getMeme('solo');
 
     expect(result.status).toBe('ok');
-    expect(result.data.id).toBe('solo');
+    expect(result.data.current.id).toBe('solo');
+  });
+
+  it('excludes hidden memes from the deck', async () => {
+    const provider = new StaticMemeProvider();
+    const all = (await provider.getMeme()).data.deck.map((m) => m.id);
+    const hidden = new Set(all.slice(0, 3));
+
+    const result = await provider.getMeme(undefined, hidden);
+
+    expect(result.data.deck.map((m) => m.id)).not.toEqual(expect.arrayContaining([...hidden]));
+    expect(hidden.has(result.data.current.id)).toBe(false);
+    expect(result.data.hiddenCount).toBe(3);
+    expect(result.data.exhausted).toBe(false);
+  });
+
+  it('shows everything again, flagged, once every meme is hidden', async () => {
+    const provider = new StaticMemeProvider();
+    const all = (await provider.getMeme()).data.deck.map((m) => m.id);
+
+    const result = await provider.getMeme(undefined, new Set(all));
+
+    expect(result.status).toBe('ok');
+    expect(result.data.exhausted).toBe(true);
+    expect(result.data.deck.length).toBe(all.length);
+    expect(result.notice).toMatch(/hidden every meme/i);
   });
 });
 

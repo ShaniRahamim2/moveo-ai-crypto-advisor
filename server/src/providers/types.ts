@@ -26,6 +26,8 @@ export interface CoinPrice {
 
 export interface NewsItem {
   title: string;
+  /** One-line description from the feed. Already present; no extra request. */
+  summary?: string;
   url: string;
   source: string;
   publishedAt: string;
@@ -55,5 +57,5 @@ export interface NewsProvider {
 
 export interface MemeProvider {
   readonly name: string;
-  getMeme(previousId?: string): Promise<ProviderResult<Meme>>;
+  getMeme(previousId?: string, hiddenIds?: Set<string>): Promise<ProviderResult<unknown>>;
 }

@@ -28,6 +28,10 @@ function decodeEntities(value: string): string {
     .replace(/&amp;/g, '&');
 }
 
+function stripTags(value: string): string {
+  return value.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
 function tagValue(block: string, tag: string): string | null {
   const match = new RegExp(`<${tag}(?:\\s[^>]*)?>([\\s\\S]*?)</${tag}>`, 'i').exec(block);
   return match?.[1] ? decodeEntities(stripCdata(match[1])) : null;
@@ -92,11 +96,17 @@ export class RssNewsProvider {
         const pubDate = tagValue(block, 'pubDate');
         if (!title || !link) return null;
 
+        // Feeds ship HTML in the description; the UI shows a single line, so it
+        // is stripped and capped here rather than trusted into the DOM.
+        const rawSummary = tagValue(block, 'description');
+        const summary = rawSummary ? stripTags(rawSummary).slice(0, 240) : '';
+
         const publishedAt = pubDate ? new Date(pubDate) : new Date();
         if (Number.isNaN(publishedAt.getTime())) return null;
 
         return {
           title,
+          ...(summary && summary !== title ? { summary } : {}),
           url: link,
           source: sourceName,
           publishedAt: publishedAt.toISOString(),
