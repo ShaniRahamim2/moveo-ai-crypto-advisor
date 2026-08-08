@@ -222,6 +222,7 @@ exercised: reads succeed on all tables, and `INSERT`, `UPDATE`, `DELETE`,
 - [`docs/AI_USAGE.md`](docs/AI_USAGE.md) — how AI tools were used, per phase
 - [`docs/FEEDBACK_MODEL_IMPROVEMENT.md`](docs/FEEDBACK_MODEL_IMPROVEMENT.md) — how feedback would train a model (bonus, documentation only)
 - [`docs/DB_ACCESS.md`](docs/DB_ACCESS.md) — reviewer database access
+- [`docs/DECISIONS.md`](docs/DECISIONS.md) — product and engineering decisions, with reasoning
 - [`PROJECT_STATUS.md`](PROJECT_STATUS.md) — build checklist
 - [`CLAUDE.md`](CLAUDE.md) — the build specification this was written against
 
