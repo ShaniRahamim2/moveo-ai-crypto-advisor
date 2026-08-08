@@ -4,7 +4,7 @@ Legend: `[ ]` not started · `[x]` done and verified · `[~]` partially done · 
 
 Nothing is marked `[x]` until the behavior has been exercised and observed. Updated after every phase.
 
-Last updated: end of Phase 8.
+Last updated: after the Coin Prices production fix.
 
 All routes are real. Nothing in the app is a placeholder.
 
@@ -24,7 +24,7 @@ All routes are real. Nothing in the app is a placeholder.
 
 - [x] 10. Real, observable personalization along all three dimensions — visible on screen and verified in production
 - [x] 11. Provider abstractions with timeout + 429 + failure handling — including the isolation test: one provider fails, other three still `ok`
-- [x] 12. API tests including explicit 429 and timeout tests — 114 tests; the timeout test really aborts at 5001ms
+- [x] 12. API tests including explicit 429 and timeout tests — 122 tests; the timeout test really aborts at 5001ms
 - [x] 13. Editable preferences after onboarding — `/preferences` reuses the onboarding form, pre-filled
 - [x] 14. Loading/skeleton, empty, and partial-error states; responsive layout — checked at a real 375px viewport, not a resized desktop
 - [x] 15. Seeded demo account so the reviewer can log in without signing up
@@ -69,6 +69,19 @@ request, and the sparkline is hand-rolled inline SVG with no charting library.
 - [x] Helper line under each investor type and content preference — verified in production
 - [x] "Not sure? Start with a popular mix" button prefilling BTC + ETH + SOL, HODLer, Market News — verified editable after prefill
 - [x] Decided against demographic/background questions — the assignment specifies three questions and the data would feed nothing
+
+## Resolved
+
+- **Coin Prices returned an empty section in production.** Keyless CoinGecko
+  rate limits per IP and shares that quota with every caller on the same IP;
+  Render's shared egress was exhausted, so every call returned 429 while the same
+  request from a residential IP returned 200. The existing stale-cache fallback
+  was correct code but unreachable — it read an in-process `Map` that only fills
+  after a success in the same process, and there was never one. Fixed with a
+  CoinGecko Demo API key (quota tied to the key, not the IP) plus a
+  `price_snapshots` table so last-known-good prices survive a cold start.
+  Verified: 12 consecutive production loads all `ok`, and the first load on a
+  genuinely cold process (uptime 5s after 18 minutes idle) returned live prices.
 
 ## Known issues
 
@@ -136,16 +149,16 @@ comparison, and a git history secret scan before submission.
 
 ## Phase log
 
-| Phase | Status | Notes |
-|---|---|---|
-| 0. Env, repo, hygiene files | done | `gh` installed mid-phase; repo created public under ShaniRahamim2, `06ee35f` pushed |
-| 1. Design proposal | approved | |
-| 2. Scaffold + deploy skeleton + Neon + DB access | done | Live on Render + Vercel + Neon; CORS, SPA fallback and full login verified in production |
-| 3. Auth | done | 15 tests passing; verified live and in a browser |
-| 4. Onboarding + preferences + personalization context | done | 44 tests; all 50 CoinGecko ids verified to resolve |
-| 5. Market + News + Meme providers, Charts/Social prefs | done | 64 tests; RSS is the live news tier; temporary diagnostic route removed |
-| 6. AI Insight | done | 84 tests; daily cache verified live (3856ms -> 76ms, one row) |
-| 7. Feedback | done | 100 tests; upsert verified against the live database (one row after a changed vote) |
-| 8. Dashboard integration + polish | done | 114 tests; deployed and verified in production at a phone viewport |
-| 9. Documentation | not started | |
-| 10. Final QA on production | not started | |
+| Phase                                                  | Status      | Notes                                                                                    |
+| ------------------------------------------------------ | ----------- | ---------------------------------------------------------------------------------------- |
+| 0. Env, repo, hygiene files                            | done        | `gh` installed mid-phase; repo created public under ShaniRahamim2, `06ee35f` pushed      |
+| 1. Design proposal                                     | approved    |                                                                                          |
+| 2. Scaffold + deploy skeleton + Neon + DB access       | done        | Live on Render + Vercel + Neon; CORS, SPA fallback and full login verified in production |
+| 3. Auth                                                | done        | 15 tests passing; verified live and in a browser                                         |
+| 4. Onboarding + preferences + personalization context  | done        | 44 tests; all 50 CoinGecko ids verified to resolve                                       |
+| 5. Market + News + Meme providers, Charts/Social prefs | done        | 64 tests; RSS is the live news tier; temporary diagnostic route removed                  |
+| 6. AI Insight                                          | done        | 84 tests; daily cache verified live (3856ms -> 76ms, one row)                            |
+| 7. Feedback                                            | done        | 100 tests; upsert verified against the live database (one row after a changed vote)      |
+| 8. Dashboard integration + polish                      | done        | 114 tests; deployed and verified in production at a phone viewport                       |
+| 9. Documentation                                       | not started |                                                                                          |
+| 10. Final QA on production                             | not started |                                                                                          |

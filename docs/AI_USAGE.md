@@ -154,12 +154,12 @@ built on. Results:
   list — 14 `:free` models of 400 — and ran real completions against a realistic
   grounded prompt. Four candidates were rejected on evidence:
 
-  | Model | Result |
-  |---|---|
-  | `google/gemma-4-31b-it:free` | 429 upstream, repeatedly |
-  | `openai/gpt-oss-20b:free` | reasoning model; spent all 300 tokens thinking, returned empty content |
-  | `meta-llama/llama-3.3-70b-instruct:free` | request timed out |
-  | `google/gemma-4-26b-a4b-it:free` | 19.3s, and opened with a markdown heading |
+  | Model                                    | Result                                                                 |
+  | ---------------------------------------- | ---------------------------------------------------------------------- |
+  | `google/gemma-4-31b-it:free`             | 429 upstream, repeatedly                                               |
+  | `openai/gpt-oss-20b:free`                | reasoning model; spent all 300 tokens thinking, returned empty content |
+  | `meta-llama/llama-3.3-70b-instruct:free` | request timed out                                                      |
+  | `google/gemma-4-26b-a4b-it:free`         | 19.3s, and opened with a markdown heading                              |
 
   Selected `nvidia/nemotron-3-nano-30b-a3b:free`: 1.7s, 73 words, referenced the
   specific ETF figure and both prices from the supplied data. Comfortably inside
@@ -356,7 +356,7 @@ would have shipped as static sample content.
 
 **A real bug that only a live call would have found.** Running the finished
 providers against the real APIs produced a headline tagged with both BTC and
-NEAR: *"Why Bitcoin's BIP-110 refuses to die despite near-zero miner support."*
+NEAR: _"Why Bitcoin's BIP-110 refuses to die despite near-zero miner support."_
 The asset detector was matching symbols case-insensitively, so `near-zero`
 matched the NEAR token. Several symbols are ordinary English words — ONE, SUI,
 TON have the same failure. Fixed by matching symbols case-sensitively (tickers
@@ -566,7 +566,7 @@ a stale build with no feedback or dashboard routes until this phase caught it.
 Two things worth drawing out. First, a green test suite is not a green build, and
 the gap between them is exactly wide enough to hide a type error. Second, a
 failed deploy is invisible when the previous instance keeps serving; health
-checks confirm *something* is running, not that it is the thing you just pushed.
+checks confirm _something_ is running, not that it is the thing you just pushed.
 The fix was one line. Finding it took a direct check of whether the new routes
 actually existed in production. `npm run build` now runs before every commit, and
 deploys are verified by asking production for the new endpoints rather than
@@ -621,3 +621,76 @@ be deleted and which kept. That listing showed an account belonging to neither m
 nor the model — someone had found the public URL and signed up. It was left
 alone. A pattern-matched delete without looking first would have been fine here
 by luck, not by design.
+
+---
+
+## Production incident — the Coin Prices section was empty
+
+Found by me, not by the tests, and worth recording in full because the failure
+mode is the interesting part.
+
+**Symptom.** The Coin Prices section — the one carrying the visual weight of the
+whole dashboard — showed "No prices to show right now" on every production load,
+including from a fresh incognito account. Every other section worked.
+
+**Cause, in three compounding layers.**
+
+1. CoinGecko rate limits keyless callers **per IP, shared across every caller on
+   that IP**. Render's free tier egresses through shared datacenter addresses, so
+   our share of that pool was already exhausted. The evidence was unambiguous:
+   the identical URL with identical headers returned 200 in 0.27s from a
+   residential IP and 429 from Render, six times out of six. Market News, which
+   also makes outbound calls from the same instance, was fine — so this was not
+   egress being blocked, it was CoinGecko and it was the IP.
+2. The in-memory cache therefore never populated, because it only fills on
+   success.
+3. The stale-cache fallback consulted that same in-memory cache, so it had
+   nothing to serve.
+
+**The part I want on the record: correct-but-unreachable code.** The 429 handler,
+the `getStale` lookup and the labelled degraded response were all implemented,
+reviewed and tested. A unit test proved the fallback fired. It could never fire
+in production, because the test seeded the cache with a prior success and
+production never had one. That is worse than not having written it at all —
+missing code announces itself, whereas this read as handled everywhere anyone
+would look: in the source, in the tests, and in a phase report that listed
+"serves stale cache on 429" as done.
+
+Two things let it through. The test constructed a state that production could not
+reach, and I reviewed the fallback's logic without asking what would have to be
+true for it to run. A test that seeds its own precondition proves the branch
+works; it does not prove the branch is reachable.
+
+**Fix, in two parts.**
+
+- A CoinGecko Demo API key, which moves the quota onto the key rather than the
+  shared IP. The key lives only in Render's environment and in a gitignored local
+  `.env`; `.env.example` carries an empty placeholder. A test asserts the key is
+  sent as a header and never appears in the request URL.
+- A `price_snapshots` table holding last-known-good prices, so the degraded path
+  survives a process restart. This is what makes the fallback reachable at all:
+  Render sleeps after fifteen minutes idle, so the in-process cache is empty on
+  exactly the request a reviewer is most likely to make — the first one.
+
+**On verifying the API key header.** The documentation was ambiguous between
+`x-cg-demo-api-key` and `x_cg_demo_api_key`, and no local experiment could settle
+it: from an IP with keyless quota available, a wrong header name still returns
+200, and even a deliberately invalid key returns 200 because CoinGecko silently
+falls back to keyless. CoinGecko exposes no rate-limit response headers to
+inspect either. The convention — hyphens for headers, underscores for query
+parameters — resolved it, and the deployed backend settled it definitively:
+keyless 429s there, so `status: "ok"` proved the header was right.
+
+**Verification, on production rather than locally.** Twelve consecutive loads
+returned `ok` with zero fallbacks and zero errors, including two genuine
+refetches after the cache expired — confirmed live because the price moved
+between them. Then the instance was left idle for eighteen minutes to force a
+real spin-down, confirmed by a 13.4 second first response and an uptime of five
+seconds, and the first dashboard load on that cold process returned live prices
+with logos and sparklines intact.
+
+**A regression I introduced while fixing it**, caught by an existing test: the
+rewritten degradation path dropped the timeout-specific message, so a timeout
+reported "prices could not be loaded" instead of "CoinGecko did not respond in
+time". The test that caught it was one I had written for the original timeout
+behaviour. Fixed the code rather than the expectation.
