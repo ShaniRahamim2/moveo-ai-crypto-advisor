@@ -4,6 +4,7 @@ import { prismaMock, resetPrismaMock } from './helpers/prismaMock.js';
 vi.mock('../src/lib/prisma.js', () => ({ prisma: prismaMock }));
 
 const { DashboardService } = await import('../src/services/dashboard.service.js');
+const { StaticMemeProvider } = await import('../src/providers/meme/meme.provider.js');
 
 const okResult = <T>(data: T, source = 'test') => ({
   status: 'ok' as const,
@@ -288,5 +289,58 @@ describe('hidden content', () => {
 
     expect(dashboard.sections).toHaveLength(4);
     expect(dashboard.hiddenCounts).toEqual({ memes: 0, articles: 0 });
+  });
+});
+
+// The assignment requires the meme to change each time the dashboard updates.
+// This regressed silently once because nothing asserted it.
+describe('meme rotation on refresh', () => {
+  function realMemeProviders() {
+    return providers({ meme: new StaticMemeProvider() });
+  }
+
+  it('returns a different meme on consecutive fetches for the same user', async () => {
+    const p = realMemeProviders();
+
+    let previous: string | undefined;
+    for (let i = 0; i < 25; i++) {
+      const dashboard = await build(p, previous);
+      const section = dashboard.sections.find((s) => s.type === 'MEME')!;
+      const current = (section.data as { current: { id: string } }).current.id;
+
+      if (previous !== undefined) {
+        expect(current, `refresh ${i} repeated ${previous}`).not.toBe(previous);
+      }
+      previous = current;
+    }
+  });
+
+  it('exposes the rotated meme as the section content reference', async () => {
+    const p = realMemeProviders();
+    const dashboard = await build(p);
+    const section = dashboard.sections.find((s) => s.type === 'MEME')!;
+    const current = (section.data as { current: { id: string } }).current.id;
+
+    expect(section.contentRef).toBe(`meme:${current}`);
+  });
+
+  it('never rotates onto a hidden meme', async () => {
+    prismaMock.feedback.findMany.mockResolvedValue([
+      { sectionType: 'MEME', contentRef: 'meme:meme-001' },
+      { sectionType: 'MEME', contentRef: 'meme:meme-002' },
+      { sectionType: 'MEME', contentRef: 'meme:meme-003' },
+    ]);
+    const p = realMemeProviders();
+
+    for (let i = 0; i < 20; i++) {
+      const dashboard = await build(p);
+      const section = dashboard.sections.find((s) => s.type === 'MEME')!;
+      const data = section.data as { current: { id: string }; deck: { id: string }[] };
+
+      expect(['meme-001', 'meme-002', 'meme-003']).not.toContain(data.current.id);
+      expect(data.deck.map((m) => m.id)).not.toEqual(
+        expect.arrayContaining(['meme-001', 'meme-002', 'meme-003']),
+      );
+    }
   });
 });

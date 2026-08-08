@@ -84,18 +84,28 @@ export function MarketNewsSection({ items }: { items: NewsItem[] }) {
   const submitVote = useSubmitVote();
   const { articleUrls } = useHiddenContent();
 
-  // Held briefly between the click and the removal so the control can turn red
-  // and the row can animate out. An instant disappearance gives no confirmation
-  // that the click registered.
+  // Held between the click and the removal so the control can turn red and the
+  // row can animate out. An instant disappearance gives no confirmation that the
+  // click registered.
   const [dismissing, setDismissing] = useState<Set<string>>(new Set());
 
   function dismiss(item: NewsItem) {
     setDismissing((prev) => new Set(prev).add(item.url));
+
     setTimeout(() => {
       submitVote.mutate({
         sectionType: 'MARKET_NEWS',
         contentRef: `${ARTICLE_REF_PREFIX}${item.url}`,
         vote: 'DOWN',
+      });
+
+      // Released once the item is hidden and filtered out anyway. Leaving it in
+      // the set made a restored article come back invisible, with its control
+      // disabled — which read as "restore does nothing".
+      setDismissing((prev) => {
+        const next = new Set(prev);
+        next.delete(item.url);
+        return next;
       });
     }, 450);
   }

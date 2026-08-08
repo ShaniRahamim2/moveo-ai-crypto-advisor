@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '../../lib/api';
 import { RefreshIcon } from '../ui/icons';
+import type { CoinPrice, Dashboard, DashboardSection } from '../../dashboard/types';
 
 /**
  * Matched to the server's price cache TTL rather than something shorter. A press
@@ -25,8 +26,23 @@ export function PricesRefreshButton() {
   async function refresh() {
     setBusy(true);
     try {
-      await apiFetch('/api/dashboard/prices');
-      await queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      const { section } = await apiFetch<{ section: DashboardSection<CoinPrice[]> }>(
+        '/api/dashboard/prices',
+      );
+
+      // The prices section is patched into the cached dashboard rather than the
+      // whole dashboard being refetched. A full refetch would rebuild every
+      // section — rotating the meme and re-running the insight — which is both
+      // surprising and the opposite of why this endpoint exists.
+      queryClient.setQueryData<Dashboard>(['dashboard'], (current) =>
+        current
+          ? {
+              ...current,
+              sections: current.sections.map((s) => (s.type === 'COIN_PRICES' ? section : s)),
+            }
+          : current,
+      );
+
       setRemaining(COOLDOWN_SECONDS);
     } catch {
       // The section renders its own error state from the dashboard payload.

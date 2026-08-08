@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../auth/useAuth';
 import { useDashboard } from '../dashboard/queries';
-import { relativeTime } from '../dashboard/format';
+
 import { SectionCard } from '../components/dashboard/SectionCard';
 import { CoinPricesSection } from '../components/dashboard/CoinPricesSection';
 import { MarketNewsSection } from '../components/dashboard/MarketNewsSection';
@@ -15,6 +15,7 @@ import { PricesRefreshButton } from '../components/dashboard/PricesRefreshButton
 import { useHiddenContent } from '../feedback/hidden';
 import { toTitleCase } from '../lib/text';
 import { Button } from '../components/ui/Button';
+import { RefreshIcon } from '../components/ui/icons';
 import type {
   CoinPrice,
   DashboardSection,
@@ -38,7 +39,11 @@ export function DashboardPage() {
   const queryClient = useQueryClient();
   const previousMemeId = useRef<string | null>(null);
   const [waking, setWaking] = useState(false);
-  const [viewedMemeId, setViewedMemeId] = useState<string | null>(null);
+  // Browsing is scoped to the payload it happened in. A refresh produces a new
+  // generatedAt, which retires the browsed choice and lets the server's freshly
+  // rotated meme take over — the assignment requires the meme to change each
+  // time the dashboard updates.
+  const [browsed, setBrowsed] = useState<{ generatedAt: string; memeId: string } | null>(null);
 
   const { data, isPending, error, isFetching, refetch } = useDashboard(
     useCallback(() => previousMemeId.current, []),
@@ -53,8 +58,17 @@ export function DashboardPage() {
   const visibleMemes = deck
     ? deck.deck.filter((m) => deck.exhausted || !hiddenMemeIds.has(m.id))
     : [];
+  const browsedMeme =
+    browsed && data && browsed.generatedAt === data.generatedAt
+      ? visibleMemes.find((m) => m.id === browsed.memeId)
+      : undefined;
+
   const currentMeme: Meme | null =
-    visibleMemes.find((m) => m.id === viewedMemeId) ?? visibleMemes[0] ?? null;
+    browsedMeme ?? visibleMemes.find((m) => m.id === deck?.current.id) ?? visibleMemes[0] ?? null;
+
+  const selectMeme = (memeId: string) => {
+    if (data) setBrowsed({ generatedAt: data.generatedAt, memeId });
+  };
 
   // Remembering the meme on screen writes a ref, not state.
   useEffect(() => {
@@ -95,7 +109,7 @@ export function DashboardPage() {
             deck={section.data as MemeDeck}
             visible={visibleMemes}
             current={currentMeme}
-            onSelect={(meme) => setViewedMemeId(meme.id)}
+            onSelect={(meme) => selectMeme(meme.id)}
           />
         );
     }
@@ -104,41 +118,50 @@ export function DashboardPage() {
   return (
     <div className="min-h-screen">
       <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
-        <header className="mb-8">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0">
-              <h1 className="text-2xl font-semibold text-white">
-                {user?.name ? `${greeting()}, ${toTitleCase(user.name)}` : greeting()}
-              </h1>
-              {data && (
-                <p className="mt-1 text-sm text-slate-500">
-                  Updated {relativeTime(data.generatedAt)}
-                </p>
-              )}
-            </div>
+        <header className="mb-8 flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="text-2xl font-semibold text-white">
+              {user?.name ? `${greeting()}, ${toTitleCase(user.name)}` : greeting()}
+            </h1>
 
-            <div className="flex shrink-0 items-center gap-2">
-              <Button variant="secondary" onClick={handleRefresh} disabled={isFetching}>
-                {isFetching ? 'Refreshing…' : 'Refresh'}
-              </Button>
-              <Button variant="secondary" onClick={signOut}>
-                Sign out
-              </Button>
-            </div>
+            {/* The profile driving the page, in place of a whole-page timestamp:
+                each section carries its own, which is more accurate since they
+                refresh independently. */}
+            {data && (
+              <div className="mt-1">
+                <PersonalizationSummary
+                  preferences={{
+                    selectedAssets: data.personalization.selectedAssets,
+                    investorType: data.personalization.investorType,
+                    contentPreferences: data.personalization.contentPreferences,
+                    updatedAt: data.generatedAt,
+                  }}
+                />
+              </div>
+            )}
           </div>
 
-          {data && (
-            <div className="mt-4 border-t border-edge pt-4">
-              <PersonalizationSummary
-                preferences={{
-                  selectedAssets: data.personalization.selectedAssets,
-                  investorType: data.personalization.investorType,
-                  contentPreferences: data.personalization.contentPreferences,
-                  updatedAt: data.generatedAt,
-                }}
-              />
-            </div>
-          )}
+          <div className="flex shrink-0 items-center gap-2">
+            <Link
+              to="/preferences"
+              className="rounded-md border border-edge px-4 py-2 text-sm text-slate-200 transition-colors hover:bg-raised"
+            >
+              Edit profile
+            </Link>
+            <Button variant="secondary" onClick={signOut}>
+              Sign out
+            </Button>
+            <button
+              type="button"
+              onClick={handleRefresh}
+              disabled={isFetching}
+              aria-label="Refresh dashboard"
+              title="Refresh dashboard"
+              className="inline-flex h-[38px] w-[38px] items-center justify-center rounded-full border border-edge text-slate-300 transition-colors hover:bg-raised hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <RefreshIcon className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
         </header>
 
         {isPending && <DashboardSkeleton waking={waking} />}
@@ -189,7 +212,7 @@ export function DashboardPage() {
                         if (vote === 'DOWN' && visibleMemes.length > 1) {
                           const at = visibleMemes.findIndex((m) => m.id === currentMeme?.id);
                           const next = visibleMemes[(at + 1) % visibleMemes.length];
-                          if (next) setViewedMemeId(next.id);
+                          if (next) selectMeme(next.id);
                         }
                       },
                     }

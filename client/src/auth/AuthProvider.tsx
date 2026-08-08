@@ -1,4 +1,5 @@
 import { createContext, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { apiFetch, getToken, setToken } from '../lib/api';
 import type { AuthResponse, AuthUser } from './types';
 
@@ -14,6 +15,7 @@ interface AuthContextValue {
 export const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient();
   const [user, setUser] = useState<AuthUser | null>(null);
   // With no stored token there is nothing to verify, so the anonymous state is
   // the initial state rather than something an effect corrects afterwards.
@@ -46,16 +48,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const authenticate = useCallback(async (path: string, body: unknown) => {
-    const result = await apiFetch<AuthResponse>(path, {
-      method: 'POST',
-      body: JSON.stringify(body),
-    });
-    setToken(result.token);
-    setUser(result.user);
-    setStatus('authenticated');
-    return result.user;
-  }, []);
+  const authenticate = useCallback(
+    async (path: string, body: unknown) => {
+      const result = await apiFetch<AuthResponse>(path, {
+        method: 'POST',
+        body: JSON.stringify(body),
+      });
+
+      // Cached dashboards and votes belong to whoever was signed in before. They
+      // must never paint under a new session, even for a frame.
+      queryClient.clear();
+
+      setToken(result.token);
+      setUser(result.user);
+      setStatus('authenticated');
+      return result.user;
+    },
+    [queryClient],
+  );
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -67,10 +77,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setToken(null);
         setUser(null);
         setStatus('anonymous');
+        queryClient.clear();
       },
       setUser,
     }),
-    [user, status, authenticate],
+    [user, status, authenticate, queryClient],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

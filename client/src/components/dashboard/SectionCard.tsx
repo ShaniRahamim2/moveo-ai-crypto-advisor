@@ -86,6 +86,7 @@ export function SectionCard({
           {actions}
           {!hideVote && (
             <VoteButtons
+              key={section.contentRef}
               sectionType={section.type}
               contentRef={section.contentRef}
               label={section.title}

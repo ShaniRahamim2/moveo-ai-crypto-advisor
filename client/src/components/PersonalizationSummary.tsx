@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom';
 import type { Preferences } from '../preferences/types';
 
 const INVESTOR_LABELS: Record<Preferences['investorType'], string> = {
@@ -23,12 +22,7 @@ export function PersonalizationSummary({ preferences }: { preferences: Preferenc
     preferences.contentPreferences.map((c) => CONTENT_LABELS[c]).join(' + '),
   ];
 
-  return (
-    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-400">
-      <span>{parts.join(' · ')}</span>
-      <Link to="/preferences" className="text-accent hover:underline">
-        Edit
-      </Link>
-    </div>
-  );
+  // The edit affordance is a header button now, so this line is purely a
+  // statement of the profile driving the page.
+  return <p className="text-sm text-slate-400">{parts.join(' · ')}</p>;
 }

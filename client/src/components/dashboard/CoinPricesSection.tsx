@@ -1,6 +1,6 @@
 import { CoinLogo } from './CoinLogo';
 import { Sparkline } from './Sparkline';
-import { formatChange, formatPrice, relativeTime } from '../../dashboard/format';
+import { formatChange, formatPrice } from '../../dashboard/format';
 import type { CoinPrice } from '../../dashboard/types';
 
 interface CoinPricesSectionProps {
@@ -47,12 +47,6 @@ export function CoinPricesSection({ prices, showSparklines }: CoinPricesSectionP
           </li>
         );
       })}
-
-      {prices[0] && (
-        <li className="pt-3 text-xs text-slate-500">
-          Updated {relativeTime(prices[0].lastUpdated)}
-        </li>
-      )}
     </ul>
   );
 }

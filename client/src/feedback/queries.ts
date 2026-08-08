@@ -56,9 +56,13 @@ export function useResetHidden() {
       }
     },
 
+    // Ordering matters and is the whole bug: the server filters hidden items out
+    // of the dashboard payload, so a dashboard refetch that overlaps an
+    // unsettled feedback state comes back filtered against the old hidden set
+    // and the items stay gone. Feedback is refetched to completion first.
     onSettled: async () => {
+      await queryClient.refetchQueries({ queryKey: ['feedback'] });
       await queryClient.refetchQueries({ queryKey: ['dashboard'] });
-      await queryClient.invalidateQueries({ queryKey: ['feedback'] });
     },
   });
 }
