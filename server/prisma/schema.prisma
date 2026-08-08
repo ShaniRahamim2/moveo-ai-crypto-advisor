@@ -83,6 +83,18 @@ model Feedback {
   @@map("feedback")
 }
 
+// Last known good prices, so a cold start or a rate-limited upstream degrades to
+// recent data rather than an empty section. The in-process cache cannot do this:
+// it dies with the process, and Render's free tier sleeps after 15 minutes idle.
+model PriceSnapshot {
+  id        String   @id @default(cuid())
+  cacheKey  String   @unique
+  payload   Json
+  fetchedAt DateTime @default(now())
+
+  @@map("price_snapshots")
+}
+
 // One row per personalization context per day. Free-tier OpenRouter allows only
 // ~50 requests/day, so the insight is generated once and reused.
 model InsightCache {

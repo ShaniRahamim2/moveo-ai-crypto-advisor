@@ -51,6 +51,11 @@ function jsonResponse(body: unknown, status = 200) {
   } as unknown as Response;
 }
 
+const noSnapshots = () => ({
+  read: vi.fn().mockResolvedValue(null),
+  write: vi.fn().mockResolvedValue(undefined),
+});
+
 beforeEach(() => {
   vi.restoreAllMocks();
 });
@@ -66,7 +71,7 @@ describe('CoinGeckoProvider', () => {
       vi.fn().mockResolvedValue(jsonResponse(marketPayload().reverse())),
     );
 
-    const result = await new CoinGeckoProvider().getPrices(hodler);
+    const result = await new CoinGeckoProvider(undefined, '', noSnapshots()).getPrices(hodler);
 
     expect(result.status).toBe('ok');
     expect(result.data.map((p) => p.symbol)).toEqual(['BTC', 'ETH']);
@@ -77,7 +82,7 @@ describe('CoinGeckoProvider', () => {
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse(marketPayload()));
     vi.stubGlobal('fetch', fetchMock);
 
-    await new CoinGeckoProvider().getPrices(trader);
+    await new CoinGeckoProvider(undefined, '', noSnapshots()).getPrices(trader);
 
     const url = fetchMock.mock.calls[0]![0] as string;
     expect(url).toContain('solana');
@@ -89,11 +94,12 @@ describe('CoinGeckoProvider', () => {
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse(marketPayload()));
     vi.stubGlobal('fetch', fetchMock);
 
-    const withCharts = await new CoinGeckoProvider().getPrices(hodler);
+    const provider = new CoinGeckoProvider(undefined, '', noSnapshots());
+    const withCharts = await provider.getPrices(hodler);
     expect(withCharts.data[0]!.sparkline7d).toEqual([1, 2, 3]);
     expect(fetchMock.mock.calls[0]![0]).toContain('sparkline=true');
 
-    const noCharts = await new CoinGeckoProvider().getPrices(trader);
+    const noCharts = await new CoinGeckoProvider(undefined, '', noSnapshots()).getPrices(trader);
     expect(noCharts.data[0]?.sparkline7d).toBeUndefined();
   });
 
@@ -101,7 +107,7 @@ describe('CoinGeckoProvider', () => {
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse({}, 429));
     vi.stubGlobal('fetch', fetchMock);
 
-    const result = await new CoinGeckoProvider().getPrices(hodler);
+    const result = await new CoinGeckoProvider(undefined, '', noSnapshots()).getPrices(hodler);
 
     expect(result.status).toBe('error');
     expect(result.data).toEqual([]);
@@ -110,7 +116,7 @@ describe('CoinGeckoProvider', () => {
   });
 
   it('serves stale cache instead of failing when rate limited', async () => {
-    const provider = new CoinGeckoProvider();
+    const provider = new CoinGeckoProvider(undefined, '', noSnapshots());
 
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(marketPayload())));
     const first = await provider.getPrices(hodler);
@@ -124,7 +130,7 @@ describe('CoinGeckoProvider', () => {
 
     expect(second.status).toBe('fallback');
     expect(second.data.map((p) => p.symbol)).toEqual(['BTC', 'ETH']);
-    expect(second.source).toMatch(/stale/i);
+    expect(second.source).toMatch(/recent/i);
     expect(second.notice).toMatch(/rate limiting/i);
   });
 
@@ -142,7 +148,7 @@ describe('CoinGeckoProvider', () => {
       ),
     );
 
-    const result = await new CoinGeckoProvider().getPrices(hodler);
+    const result = await new CoinGeckoProvider(undefined, '', noSnapshots()).getPrices(hodler);
 
     expect(result.status).toBe('error');
     expect(result.notice).toMatch(/did not respond in time/i);
@@ -152,7 +158,7 @@ describe('CoinGeckoProvider', () => {
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse(marketPayload()));
     vi.stubGlobal('fetch', fetchMock);
 
-    const provider = new CoinGeckoProvider();
+    const provider = new CoinGeckoProvider(undefined, '', noSnapshots());
     await provider.getPrices(hodler);
     const second = await provider.getPrices(hodler);
 
@@ -390,5 +396,111 @@ describe('meme images on disk', () => {
     );
 
     expect(missing).toEqual([]);
+  });
+});
+
+describe('CoinGecko API key and persisted snapshots', () => {
+  const emptyStore = { read: vi.fn().mockResolvedValue(null), write: vi.fn().mockResolvedValue(undefined) };
+
+  it('sends the demo key header when a key is configured', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(marketPayload()));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await new CoinGeckoProvider(undefined, 'CG-test-key', emptyStore).getPrices(hodler);
+
+    const init = fetchMock.mock.calls[0]![1] as RequestInit;
+    expect((init.headers as Record<string, string>)['x-cg-demo-api-key']).toBe('CG-test-key');
+  });
+
+  it('omits the header entirely when no key is configured', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(marketPayload()));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await new CoinGeckoProvider(undefined, '', emptyStore).getPrices(hodler);
+
+    const init = fetchMock.mock.calls[0]![1] as RequestInit;
+    expect(init.headers as Record<string, string>).not.toHaveProperty('x-cg-demo-api-key');
+  });
+
+  it('never puts the key in the request URL', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(marketPayload()));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await new CoinGeckoProvider(undefined, 'CG-test-key', emptyStore).getPrices(hodler);
+
+    expect(fetchMock.mock.calls[0]![0] as string).not.toContain('CG-test-key');
+  });
+
+  it('persists a snapshot after a successful fetch', async () => {
+    const store = { read: vi.fn().mockResolvedValue(null), write: vi.fn().mockResolvedValue(undefined) };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(marketPayload())));
+
+    await new CoinGeckoProvider(undefined, '', store).getPrices(hodler);
+
+    expect(store.write).toHaveBeenCalledTimes(1);
+    const [, written] = store.write.mock.calls[0]!;
+    expect((written as { symbol: string }[]).map((p) => p.symbol)).toEqual(['BTC', 'ETH']);
+  });
+
+  // The behaviour that was broken in production: a cold process, rate limited on
+  // its very first call, with nothing in the in-memory cache to fall back on.
+  it('serves the persisted snapshot when rate limited on a cold start', async () => {
+    const saved = [
+      { symbol: 'BTC', name: 'Bitcoin', price: 64000, change24hPercent: -0.5, lastUpdated: 'x' },
+      { symbol: 'ETH', name: 'Ethereum', price: 1900, change24hPercent: 0.2, lastUpdated: 'x' },
+    ];
+    const store = {
+      read: vi.fn().mockResolvedValue({ prices: saved, fetchedAt: new Date(Date.now() - 8 * 60_000) }),
+      write: vi.fn().mockResolvedValue(undefined),
+    };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({}, 429)));
+
+    const result = await new CoinGeckoProvider(undefined, '', store).getPrices(hodler);
+
+    expect(result.status).toBe('fallback');
+    expect(result.data.map((p) => p.symbol)).toEqual(['BTC', 'ETH']);
+    expect(result.source).toMatch(/saved/i);
+    expect(result.notice).toMatch(/rate limiting/i);
+    expect(result.notice).toMatch(/8 minutes ago/);
+  });
+
+  it('prefers the in-process cache over the persisted snapshot', async () => {
+    const store = {
+      read: vi.fn().mockResolvedValue({ prices: [{ symbol: 'OLD' }], fetchedAt: new Date() }),
+      write: vi.fn().mockResolvedValue(undefined),
+    };
+    const provider = new CoinGeckoProvider(undefined, '', store);
+
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(marketPayload())));
+    await provider.getPrices(hodler);
+
+    vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 5 * 60_000);
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({}, 429)));
+    const result = await provider.getPrices(hodler);
+
+    expect(result.data.map((p) => p.symbol)).toEqual(['BTC', 'ETH']);
+    expect(store.read).not.toHaveBeenCalled();
+  });
+
+  it('reports an error only when both cache tiers are empty', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({}, 429)));
+
+    const result = await new CoinGeckoProvider(undefined, '', emptyStore).getPrices(hodler);
+
+    expect(result.status).toBe('error');
+    expect(result.data).toEqual([]);
+  });
+
+  it('does not fail when the snapshot store throws', async () => {
+    const store = {
+      read: vi.fn().mockRejectedValue(new Error('db down')),
+      write: vi.fn().mockRejectedValue(new Error('db down')),
+    };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(marketPayload())));
+
+    const result = await new CoinGeckoProvider(undefined, '', store).getPrices(hodler);
+
+    expect(result.status).toBe('ok');
+    expect(result.data).toHaveLength(2);
   });
 });
