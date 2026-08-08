@@ -4,7 +4,7 @@ Legend: `[ ]` not started · `[x]` done and verified · `[~]` partially done · 
 
 Nothing is marked `[x]` until the behavior has been exercised and observed. Updated after every phase.
 
-Last updated: after the Coin Prices production fix.
+Last updated: end of Phase 9 (documentation).
 
 All routes are real. Nothing in the app is a placeholder.
 
@@ -17,7 +17,7 @@ All routes are real. Nothing in the app is a placeholder.
 - [x] 5. Meme changes when the dashboard refreshes — verified: meme-001 to meme-005 on one refresh, previous never repeated
 - [x] 6. Deployed frontend + backend + managed Postgres, publicly reachable — Vercel + Render + Neon, verified in production
 - [x] 7. Public GitHub repo, no secrets committed, readable commit history — repo created public and verified in Phase 0 (not a fork, not a template); secret scan repeated at Phase 10
-- [~] 8. Documentation — `docs/AI_USAGE.md` and `docs/DB_ACCESS.md` are written and current. **`README.md`, `docs/ASSIGNMENT_OVERVIEW.md` and `docs/FEEDBACK_MODEL_IMPROVEMENT.md` do not exist yet.** This is Phase 9 and it is the largest remaining gap
+- [x] 8. `README.md`, `docs/ASSIGNMENT_OVERVIEW.md`, `docs/AI_USAGE.md`, `docs/FEEDBACK_MODEL_IMPROVEMENT.md` — all four written; screenshots outstanding
 - [x] 9. Read-only DB access path for the reviewer — `moveo_readonly` created, connected to, reads allowed and all writes rejected
 
 ## P1 — what makes this stand out
@@ -32,6 +32,9 @@ All routes are real. Nothing in the app is a placeholder.
 ## P2 — only with spare time
 
 None of these were started. None are required, and none are blocking submission.
+
+- [x] 10. Coin Prices refresh control with a 90s cooldown matched to the cache TTL
+- [x] 9. Time-aware greeting, computed client-side
 
 - [ ] 16. Claude Code post-edit lint hook
 - [ ] 17. Health-check keep-alive to mitigate cold starts — would reduce the
